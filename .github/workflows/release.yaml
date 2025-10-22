@@ -1,0 +1,59 @@
+name: Build ZIP and Create Release (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    name: Manual Release Builder
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt || true
+
+      - name: Prepare release ZIP
+        run: |
+          mkdir -p elkbledom_fastlink
+          cp -r custom_components/elkbledom_fastlink elkbledom_fastlink/custom_components
+          zip -r elkbledom_fastlink.zip elkbledom_fastlink
+          echo "✅ ZIP file created: elkbledom_fastlink.zip"
+
+      - name: Get version from manifest
+        id: get_version
+        run: |
+          VERSION=$(grep '"version"' custom_components/elkbledom_fastlink/manifest.json | cut -d '"' -f4)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: "ELK-BLEDOM FastLink v${{ steps.get_version.outputs.version }}"
+          body: |
+            🚀 **Release ELK-BLEDOM FastLink v${{ steps.get_version.outputs.version }}**
+            
+            🔧 **Changes:**
+            • Improved brightness control  
+            • Optimized color and warm tone  
+            • Restored effect animations  
+            • Enhanced Bluetooth stability  
+            
+            ---
+            🧩 Home Assistant custom integration for ELK-BLEDOM RGB controllers  
+            💾 Compatible with HACS  
+            🔗 https://github.com/Satimaro/elkbledom-fastlink
+          files: |
+            elkbledom_fastlink.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
