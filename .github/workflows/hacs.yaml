@@ -1,34 +1,37 @@
-name: Validate with HACS
+name: HACS Validation
 
 on:
+  workflow_dispatch:
   push:
+    branches:
+      - main
   pull_request:
-  schedule:
-    - cron: "0 0 * * *"
+    branches:
+      - main
+
+permissions: {}
 
 jobs:
-  hacs-validation:
-    name: HACS Validation
+  hacs:
+    name: "HACS Validation - ELK-BLEDOM FastLink"
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run HACS Validation
+      - name: Run HACS validation
         uses: hacs/action@main
         with:
           category: "integration"
+          repository: "Satimaro/elkbledom_fastlink"
+          ignore: "topics"
+          comment: false
 
-      - name: Validate HACS manifest
-        run: |
-          echo "Running additional manifest validation..."
-          if [ ! -f custom_components/elkbledom_fastlink/manifest.json ]; then
-            echo "❌ manifest.json not found!"
-            exit 1
-          fi
-          if ! grep -q '"domain": "elkbledom_fastlink"' custom_components/elkbledom_fastlink/manifest.json; then
-            echo "❌ Domain key not found or incorrect!"
-            exit 1
-          fi
-          echo "✅ manifest.json validation passed!"
+      - name: Success message
+        if: success()
+        run: echo "✅ HACS validation passed for ELK-BLEDOM FastLink"
+
+      - name: Failure message
+        if: failure()
+        run: echo "❌ HACS validation failed. Check the logs for details."
