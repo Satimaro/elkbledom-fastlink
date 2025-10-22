@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
   schedule:
-    - cron: "0 0 * * *"  # Ежедневная проверка
+    - cron: "0 0 * * *"  # Проверка раз в сутки
 
 jobs:
   validate:
@@ -16,5 +16,5 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧠 Run hassfest validation
+      - name: 🧠 Run Hassfest validation
         uses: home-assistant/actions/hassfest@main
