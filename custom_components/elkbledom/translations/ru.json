@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "mac": "Bluetooth MAC-адрес",
+          "name": "Имя устройства"
+        },
+        "title": "Выберите ленту Elkbledom. Убедитесь, что устройство находится в зоне видимости для проверки."
+      },
+      "validate": {
+        "data": {
+          "retry": "Повторить попытку подключения?",
+          "flicker": "Мигала ли лента при проверке?"
+        },
+        "title": "Проверка подключения Elkbledom"
+      },
+      "manual": {
+        "data": {
+          "mac": "Bluetooth MAC-адрес",
+          "name": "Имя устройства"
+        },
+        "title": "Введите Bluetooth MAC-адрес вручную"
+      }
+    },
+    "error": {
+      "connect": "Не удалось подключиться к Elkbledom"
+    },
+    "abort": {
+      "cannot_validate": "Не удалось проверить устройство Elkbledom",
+      "cannot_connect": "Не удалось подключиться к Elkbledom",
+      "not_supported": "Устройство Elkbledom не поддерживается",
+      "invalid_discovery_info": "Неверная информация об устройстве Bluetooth"
+    }
+  },
+  "options": {
+    "step": {
+      "user": {
+        "data": {
+          "reset": "Сбрасывать цвет при включении",
+          "delay": "Задержка отключения (в секундах, 0 — не отключать)"
+        }
+      }
+    }
+  },
+  "title": "Elkbledom-FastLink"
+}
