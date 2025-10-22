@@ -1,0 +1,97 @@
+name: 🚀 Validate, Test & Release (All-in-One)
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  # =============================
+  # 🧩 VALIDATION (Hassfest + HACS)
+  # =============================
+  validate:
+    name: 🧠 Validate Integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🧩 Hassfest Validation
+        uses: home-assistant/actions/hassfest@main
+
+      - name: 🧪 HACS Validation
+        uses: hacs/action@main
+        with:
+          category: "integration"
+
+  # =============================
+  # 📦 BUILD & RELEASE
+  # =============================
+  release:
+    name: 📦 Build ZIP & Create Release
+    needs: [validate]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🧰 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 🔎 Validate Tag vs manifest.json
+        id: ver
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "tag_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+          MANIFEST_VERSION=$(python - <<'PY'
+import json
+with open('custom_components/elkbledom/manifest.json','r',encoding='utf-8') as f:
+    print(json.load(f)['version'])
+PY
+)
+          echo "manifest_version=${MANIFEST_VERSION}" >> $GITHUB_OUTPUT
+          if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "::error::Tag version (v$TAG_VERSION) != manifest.json version ($MANIFEST_VERSION)"
+            exit 1
+          fi
+          echo "✅ Version check passed: v$TAG_VERSION"
+
+      - name: 🧠 Quick Hassfest re-validation
+        uses: home-assistant/actions/hassfest@main
+
+      - name: 📦 Build Release ZIP
+        run: |
+          ZIP="elkbledom-fastlink-v${{ steps.ver.outputs.tag_version }}.zip"
+          echo "ZIP_NAME=$ZIP" >> $GITHUB_ENV
+          cd custom_components
+          zip -r "../$ZIP" "elkbledom" -x "**/__pycache__/*" "**/.DS_Store"
+          cd ..
+          echo "✅ Built $ZIP"
+
+      - name: 📰 Auto-generate release notes
+        id: notes
+        run: |
+          echo "release_name=ELK-BLEDOM FastLink v${{ steps.ver.outputs.tag_version }}" >> $GITHUB_OUTPUT
+          echo "release_body=⚡ Fast BLE connection, RGB effects, and smooth brightness for Home Assistant." >> $GITHUB_OUTPUT
+
+      - name: 🚀 Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.notes.outputs.release_name }}
+          body: ${{ steps.notes.outputs.release_body }}
+          files: ${{ env.ZIP_NAME }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
