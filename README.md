@@ -62,7 +62,7 @@
 
 ### 📦 Информация
 
-- **Домен:** `elkbledom`  
+- **Домен:** `elkbledom_fastlink`  
 - **Платформы:** `light`, `number`  
 - **Зависимости:** `bleak >= 0.22.2`, `bleak-retry-connector >= 3.5.0`  
 
@@ -140,7 +140,7 @@ Type: **Integration**
 
 ### 📦 Integration Info
 
-- **Domain:** `elkbledom`  
+- **Domain:** `elkbledom_fastlink`  
 - **Platforms:** `light`, `number`  
 - **Requirements:** `bleak >= 0.22.2`, `bleak-retry-connector >= 3.5.0`  
 

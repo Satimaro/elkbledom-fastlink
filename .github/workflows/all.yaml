@@ -68,7 +68,7 @@ jobs:
         run: |
           mkdir -p release
           cd custom_components
-          zip -r ../release/elkbledom-fastlink.zip elkbledom_fastlink -x "*.pyc" "__pycache__/*"
+          zip -r ../release/elkbledom_fastlink.zip elkbledom_fastlink -x "*.pyc" "__pycache__/*"
           cd ..
 
       - name: Upload ZIP as release asset
