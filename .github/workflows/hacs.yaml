@@ -1,1 +1,34 @@
+name: Validate with HACS
 
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  hacs-validation:
+    name: HACS Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run HACS Validation
+        uses: hacs/action@main
+        with:
+          category: "integration"
+
+      - name: Validate HACS manifest
+        run: |
+          echo "Running additional manifest validation..."
+          if [ ! -f custom_components/elkbledom_fastlink/manifest.json ]; then
+            echo "❌ manifest.json not found!"
+            exit 1
+          fi
+          if ! grep -q '"domain": "elkbledom_fastlink"' custom_components/elkbledom_fastlink/manifest.json; then
+            echo "❌ Domain key not found or incorrect!"
+            exit 1
+          fi
+          echo "✅ manifest.json validation passed!"
