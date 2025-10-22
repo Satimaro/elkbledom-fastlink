@@ -1,4 +1,4 @@
-name: 🚀 Validate, Test & Release (All-in-One)
+name: 🚀 Validate, Build & Release (Full Auto)
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   # =============================
-  # 🧩 VALIDATION (Hassfest + HACS)
+  # 🧩 VALIDATION JOB
   # =============================
   validate:
     name: 🧠 Validate Integration
@@ -30,10 +30,10 @@ jobs:
           category: "integration"
 
   # =============================
-  # 📦 BUILD & RELEASE
+  # 📦 BUILD & RELEASE JOB
   # =============================
   release:
-    name: 📦 Build ZIP & Create Release
+    name: 📦 Auto Build ZIP & Create Release
     needs: [validate]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
@@ -49,42 +49,50 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: 🔎 Validate Tag vs manifest.json
-        id: ver
+      - name: 🧾 Sync manifest.json version with tag
+        id: sync
         shell: bash
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           echo "tag_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
-          MANIFEST_VERSION=$(python - <<'PY'
+          MANIFEST="custom_components/elkbledom/manifest.json"
+          echo "🔧 Updating $MANIFEST to version $TAG_VERSION..."
+          python - <<PY
 import json
-with open('custom_components/elkbledom/manifest.json','r',encoding='utf-8') as f:
-    print(json.load(f)['version'])
+path = "$MANIFEST"
+with open(path, "r", encoding="utf-8") as f:
+    data = json.load(f)
+data["version"] = "${TAG_VERSION}"
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
 PY
-)
-          echo "manifest_version=${MANIFEST_VERSION}" >> $GITHUB_OUTPUT
-          if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
-            echo "::error::Tag version (v$TAG_VERSION) != manifest.json version ($MANIFEST_VERSION)"
-            exit 1
-          fi
-          echo "✅ Version check passed: v$TAG_VERSION"
+          echo "✅ manifest.json version updated to $TAG_VERSION"
 
-      - name: 🧠 Quick Hassfest re-validation
+      - name: 🧩 Re-run Hassfest Validation
         uses: home-assistant/actions/hassfest@main
 
-      - name: 📦 Build Release ZIP
+      - name: 🧪 Re-run HACS Validation
+        uses: hacs/action@main
+        with:
+          category: "integration"
+        continue-on-error: true
+
+      - name: 📦 Build ZIP for HACS
+        shell: bash
         run: |
-          ZIP="elkbledom-fastlink-v${{ steps.ver.outputs.tag_version }}.zip"
+          ZIP="elkbledom-fastlink-v${{ steps.sync.outputs.tag_version }}.zip"
           echo "ZIP_NAME=$ZIP" >> $GITHUB_ENV
           cd custom_components
           zip -r "../$ZIP" "elkbledom" -x "**/__pycache__/*" "**/.DS_Store"
           cd ..
-          echo "✅ Built $ZIP"
+          ls -lh "$ZIP"
+          echo "✅ Created $ZIP"
 
-      - name: 📰 Auto-generate release notes
+      - name: 📰 Generate Release Notes
         id: notes
         run: |
-          echo "release_name=ELK-BLEDOM FastLink v${{ steps.ver.outputs.tag_version }}" >> $GITHUB_OUTPUT
-          echo "release_body=⚡ Fast BLE connection, RGB effects, and smooth brightness for Home Assistant." >> $GITHUB_OUTPUT
+          echo "release_name=ELK-BLEDOM FastLink v${{ steps.sync.outputs.tag_version }}" >> $GITHUB_OUTPUT
+          echo "release_body=✨ Fast BLE connection, working effects, improved brightness curve, and stable real-time sync with Home Assistant." >> $GITHUB_OUTPUT
 
       - name: 🚀 Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -95,3 +103,10 @@ PY
           draft: false
           prerelease: false
           generate_release_notes: true
+
+      - name: 💾 Commit updated manifest.json
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🔖 Update manifest.json to v${{ steps.sync.outputs.tag_version }}"
+          file_pattern: custom_components/elkbledom/manifest.json
+          push_options: --force
