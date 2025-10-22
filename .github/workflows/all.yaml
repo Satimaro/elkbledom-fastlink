@@ -58,10 +58,11 @@ jobs:
       - name: Commit and push manifest bump
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: bump manifest.json to ${{ github.ref_name }}"
+          commit_message: "chore: bump manifest.json to v${{ steps.version.outputs.new_version }}"
           file_pattern: custom_components/elkbledom/manifest.json
           branch: main
-          tagging_message: "${{ github.ref_name }}"
+          tagging_message: "v${{ steps.version.outputs.new_version }}"
+          push_options: --force
 
       - name: Create ZIP archive
         run: |
