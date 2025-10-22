@@ -1,100 +1,64 @@
-name: Validate, Build & Release (Full Auto)
+name: 🚀 Build ZIP and Create Release
 
 on:
   push:
-    branches: [ main, master ]
     tags:
       - "v*"
-  pull_request:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * *"
+
+permissions:
+  contents: write
 
 jobs:
-  validate:
-    name: Validate Integration
+  build:
+    name: Build and Release
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Hassfest validation
-        uses: home-assistant/actions/hassfest@master
-
-      - name: HACS validation
-        uses: hacs/action@main
         with:
-          category: integration
-
-  release:
-    name: Build ZIP & Create Release
-    needs: [validate]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
-      - name: Sync manifest.json version with tag
-        id: sync
-        shell: bash
+      - name: Install dependencies
         run: |
-          set -euo pipefail
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          echo "tag_version=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
-          MANIFEST_PATH="custom_components/elkbledom/manifest.json"
-          python -c "import json,sys; p='${MANIFEST_PATH}'; v='${TAG_VERSION}'; d=json.load(open(p, 'r', encoding='utf-8')); d['version']=v; json.dump(d, open(p,'w', encoding='utf-8'), indent=2, ensure_ascii=False)"
-          echo "manifest.json updated to ${TAG_VERSION}"
+          python -m pip install --upgrade pip
+          pip install bleak bleak-retry-connector bluepy
 
-      - name: Re-run Hassfest validation
-        uses: home-assistant/actions/hassfest@master
-
-
-      - name: Re-run HACS validation (non-blocking)
-        uses: hacs/action@main
-        with:
-          category: integration
-        continue-on-error: true
-
-      - name: Build ZIP for HACS
-        shell: bash
+      - name: Bump version in manifest.json
         run: |
-          set -euo pipefail
-          ZIP_NAME="elkbledom-fastlink-v${{ steps.sync.outputs.tag_version }}.zip"
-          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
-          test -d custom_components/elkbledom
-          cd custom_components
-          zip -r "../${ZIP_NAME}" "elkbledom" -x "**/__pycache__/*" "**/.DS_Store"
-          cd ..
-          ls -lh "${ZIP_NAME}"
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "Updating version to $VERSION"
+          sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION#v}\"/" custom_components/elkbledom/manifest.json
 
-      - name: Generate Release Notes
-        id: notes
-        shell: bash
-        run: |
-          echo "release_name=ELK-BLEDOM FastLink v${{ steps.sync.outputs.tag_version }}" >> "$GITHUB_OUTPUT"
-          echo "release_body=Fast BLE connection, working effects, smoother brightness, and RGB color temperature emulation for Home Assistant." >> "$GITHUB_OUTPUT"
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ steps.notes.outputs.release_name }}
-          body: ${{ steps.notes.outputs.release_body }}
-          files: ${{ env.ZIP_NAME }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-      - name: Commit updated manifest.json
+      - name: Commit and push manifest bump
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: bump manifest.json to v${{ steps.sync.outputs.tag_version }}"
+          commit_message: "chore: bump manifest.json to ${{ github.ref_name }}"
           file_pattern: custom_components/elkbledom/manifest.json
+          branch: main
+          tagging_message: "${{ github.ref_name }}"
+
+      - name: Create ZIP archive
+        run: |
+          mkdir -p release
+          cd custom_components
+          zip -r ../release/elkbledom-fastlink.zip elkbledom -x "*.pyc" "__pycache__/*"
+          cd ..
+
+      - name: Upload ZIP as release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/elkbledom-fastlink.zip
+          name: "ELK-BLEDOM FastLink ${{ github.ref_name }}"
+          body: |
+            🚀 **ELK-BLEDOM FastLink** ${{ github.ref_name }}
+            - Быстрое Bluetooth-соединение без отвалов
+            - Поддержка эффектов и RGB 5050
+            - Мгновенное управление яркостью и цветом
+          draft: false
+          prerelease: false
