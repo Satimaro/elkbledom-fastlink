@@ -17,7 +17,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers import device_registry
 
 from .const import DOMAIN, EFFECTS_MAP
-from .elkbledom import BLEDOMInstance
+from .elkbledom_fastlink import BLEDOMInstance
 
 _LOGGER = logging.getLogger(__name__)
 
