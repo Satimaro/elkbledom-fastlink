@@ -48,23 +48,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export TAG_VERSION="${GITHUB_REF_NAME#v}"
-          export MANIFEST_PATH="custom_components/elkbledom/manifest.json"
-          echo "tag_version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
-
-          echo "Updating $MANIFEST_PATH to version $TAG_VERSION..."
-          python - <<'PY'
-import json, os
-path = os.environ["MANIFEST_PATH"]
-ver  = os.environ["TAG_VERSION"]
-with open(path, "r", encoding="utf-8") as f:
-    data = json.load(f)
-data["version"] = ver
-with open(path, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
-print(f"manifest.json updated to {ver}")
-PY
-          echo "✅ manifest.json version updated"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "tag_version=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+          MANIFEST_PATH="custom_components/elkbledom/manifest.json"
+          python -c "import json,sys; p='${MANIFEST_PATH}'; v='${TAG_VERSION}'; d=json.load(open(p, 'r', encoding='utf-8')); d['version']=v; json.dump(d, open(p,'w', encoding='utf-8'), indent=2, ensure_ascii=False)"
+          echo "manifest.json updated to ${TAG_VERSION}"
 
       - name: Re-run Hassfest validation
         uses: home-assistant/actions/hassfest@main
@@ -79,20 +67,20 @@ PY
         shell: bash
         run: |
           set -euo pipefail
-          ZIP="elkbledom-fastlink-v${{ steps.sync.outputs.tag_version }}.zip"
-          echo "ZIP_NAME=$ZIP" >> "$GITHUB_ENV"
+          ZIP_NAME="elkbledom-fastlink-v${{ steps.sync.outputs.tag_version }}.zip"
+          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
           test -d custom_components/elkbledom
           cd custom_components
-          zip -r "../$ZIP" "elkbledom" -x "**/__pycache__/*" "**/.DS_Store"
+          zip -r "../${ZIP_NAME}" "elkbledom" -x "**/__pycache__/*" "**/.DS_Store"
           cd ..
-          ls -lh "$ZIP"
-          echo "✅ Created $ZIP"
+          ls -lh "${ZIP_NAME}"
 
       - name: Generate Release Notes
         id: notes
+        shell: bash
         run: |
-          echo "release_name=ELK-BLEDOM FastLink v${{ steps.sync.outputs.tag_version }}" >> $GITHUB_OUTPUT
-          echo "release_body=Fast BLE connection, working effects, smoother brightness, and RGB color temperature emulation for Home Assistant." >> $GITHUB_OUTPUT
+          echo "release_name=ELK-BLEDOM FastLink v${{ steps.sync.outputs.tag_version }}" >> "$GITHUB_OUTPUT"
+          echo "release_body=Fast BLE connection, working effects, smoother brightness, and RGB color temperature emulation for Home Assistant." >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
