@@ -1,235 +1,116 @@
-from bluepy.btle import Scanner, DefaultDelegate, BTLEDisconnectError, Peripheral, BTLEException
-from queue import Queue
-from threading import Thread
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+🔍 BTScan.py — Утилита для поиска BLE-устройств (Elkbledom, LEDBLE, MELK и т.п.)
+Автор: Satimaro
+Версия: 1.0.0
+
+Использует BluePy для сканирования Bluetooth Low Energy устройств.
+Выводит MAC, RSSI, имя и поддерживаемые сервисы.
+"""
+
+from bluepy.btle import Scanner, DefaultDelegate, BTLEException
 import logging
+import sys
+import time
 
-_LOGGER = logging.getLogger(__name__)
+# -----------------------------------------------
+# Настройки логирования
+# -----------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-8s | %(message)s",
+    datefmt="%H:%M:%S"
+)
+_LOGGER = logging.getLogger("BTScan")
 
-class OperationType:
-    LOCK_FULL = 1
-    LOCK_ONE = 2
-    LOCK_NIGHT_MODE = 1
-    UNLOCK = 4
-    GET_REPORT = 5
-    ADJUST_NUMBER_OF_ROTATION = 8
-    START_LEARNING_MODE = 9
-    DELETE_ALL_CONTROLLERS = 10
-    GET_READY_FOR_DELETE_USER = 11
-    BUZZER_REPORT = 12
-    GET_USERS = 13
-    GET_INFORMATION = 14
-    START_UPDATE_MODE = 15
-    GET_KEY = "!"
-    WAIT = "&"
-    DISCONNECT = "#"
-    GET_CHECK_IN_OUT_TIMES = "?"
-    GET_AUTO_LOCK_DAY_TIMES = "+"
-    LEARN_SUCCESS = "*"
+# -----------------------------------------------
+# Ключевые слова для фильтрации устройств
+# -----------------------------------------------
+TARGET_NAMES = [
+    "ELK-BLE", "ELK-BLEDDM", "LEDBLE", "MELK", "ELK-BULB", "ELK-LAMPL"
+]
 
-class BleServicesAndChracteristicsChars:
-    CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb"
-    BLE_SERVICES = ["00035b03-58e6-07dd-021a-08123a000300","49535343-FE7D-4AE5-8FA9-9FAFD205E455","6e400001-b5a3-f393-e0a9-e50e24dcca9e"]
-    BLE_WRITE_CHARACTERISTICS = {"00035b03-58e6-07dd-021a-08123a000301","49535343-1E4D-4BD9-BA61-23C647249616","6e400002-b5a3-f393-e0a9-e50e24dcca9e"}
-    BLE_READ_CHARACTERISTICS = {"00035b03-58e6-07dd-021a-08123a0003ff","49535343-1E4D-4BD9-BA61-23C647249616","6e400003-b5a3-f393-e0a9-e50e24dcca9e"}
-    DEVICE_NAME_CONTENT = "UTOPIC"
-    
-class cDelegate(DefaultDelegate):
+# -----------------------------------------------
+# Обработчик событий сканирования
+# -----------------------------------------------
+class ScanDelegate(DefaultDelegate):
     def __init__(self):
         DefaultDelegate.__init__(self)
 
     def handleDiscovery(self, dev, isNewDev, isNewData):
         if isNewDev:
-            print("Discovered device", dev.addr)
+            _LOGGER.debug("🔹 Найдено новое устройство: %s", dev.addr)
         elif isNewData:
-            print("Received new data from", dev.addr)
+            _LOGGER.debug("🔄 Обновлены данные устройства: %s", dev.addr)
 
-class Discovery():
-    def __init__(self):
-        scanner = Scanner().withDelegate(cDelegate())
-        self.devices = scanner.scan(10.0)
-        self.utopicdevice = []
 
-    def getDevices(self, address = None):
-        if address is None:
-            for dev in self.devices:
-                print("Device %s (%s), RSSI=%d dB" % (dev.addr, dev.addrType, dev.rssi))
-                utdv = UtopicDevice(dev)
-                if utdv.getDevice() is not None:
-                    self.utopicdevice.append(utdv)
-        else:
-            print("return device address")
-        return self.utopicdevice
+# -----------------------------------------------
+# Основной класс сканирования
+# -----------------------------------------------
+class BluetoothScanner:
+    def __init__(self, duration: int = 10):
+        self.duration = duration
+        self.scanner = Scanner().withDelegate(ScanDelegate())
 
-class UtopicDevice():
-    def __init__(self, device):
-        self.device = device
-        self.utopicdevice = None
-        self.writeChar = None
-        self.readChar = None
-        self.notChar = None
-        for (adtype, desc, value) in device.getScanData():
-            print("  %s = %s" % (desc, value))
-            if value == BleServicesAndChracteristicsChars.DEVICE_NAME_CONTENT:
-                self.utopicdevice = self
-            if value in BleServicesAndChracteristicsChars.BLE_SERVICES:
-                self.serviceuuid = value
+    def scan(self):
+        """Выполняет сканирование BLE-устройств."""
+        _LOGGER.info("🚀 Начало сканирования BLE (%s секунд)...", self.duration)
+        try:
+            devices = self.scanner.scan(self.duration)
+        except BTLEException as e:
+            _LOGGER.error("Ошибка Bluetooth: %s", e)
+            sys.exit(1)
 
-    def getAddress(self):
-        return self.device.addr
+        if not devices:
+            _LOGGER.warning("❌ Устройства не найдены. Убедись, что Bluetooth включён.")
+            return
 
-    def getServiceUUID(self):
-        return self.serviceuuid
+        _LOGGER.info("📡 Найдено %d устройств:", len(devices))
+        print("=" * 70)
+        print(f"{'MAC-адрес':<20} {'RSSI (дБ)':<10} {'Имя устройства':<25} {'Тип'}")
+        print("=" * 70)
 
-    def getDevice(self):
-        return self.utopicdevice
+        for dev in devices:
+            name = None
+            for (_, desc, value) in dev.getScanData():
+                if desc.lower() == "complete local name":
+                    name = value
+                    break
 
-    def setWriteCharact(self, writeChar):
-        self.writeChar = writeChar
+            target_flag = ""
+            if name and any(key.lower() in name.lower() for key in TARGET_NAMES):
+                target_flag = "⭐"
+            elif name is None:
+                name = "(Без имени)"
 
-    def getWriteCharact(self):
-        return self.writeChar
+            print(f"{dev.addr:<20} {dev.rssi:<10} {name:<25} {target_flag}")
 
-    def setReadCharact(self, readChar):
-        self.readChar = readChar
+        print("=" * 70)
+        _LOGGER.info("✅ Сканирование завершено.")
 
-    def getReadCharact(self):
-        return self.readChar
 
-    def setNotifyCharact(self, notChar):
-        self.notChar = notChar
+# -----------------------------------------------
+# Запуск из консоли
+# -----------------------------------------------
+if __name__ == "__main__":
+    try:
+        duration = 10
+        if len(sys.argv) > 1:
+            duration = int(sys.argv[1])
 
-    def getNotifyCharact(self):
-        return self.notChar
+        scanner = BluetoothScanner(duration)
+        scanner.scan()
 
-class BLEMagic(DefaultDelegate):
+        # Совет пользователю
+        print("\n💡 Совет: чтобы повторить сканирование, запусти снова:")
+        print("   python3 BTScan.py 15   # где 15 — длительность в секундах")
 
-    def __init__(self):
-        super().__init__()
-        discover = Discovery()
-        self.devices = discover.getDevices()
-        self.utopicKey = None
-        self.utopicdevices = []
-        self.periph = None
-        
-        # create the TX queue
-        self._tx_queue = Queue()
-
-        # start the bluepy IO thread
-        self._bluepy_thread = Thread(target=self._bluepy_handler)
-        self._bluepy_thread.name = "bluepy_handler"
-        self._bluepy_thread.daemon = True
-        self._bluepy_thread.start()
-
-    def handleNotification(self, cHandle, data):
-        """This is the notification delegate function from DefaultDelegate
-        """
-        print("\nReceived Notification: %s Handle: %s",str(data), cHandle)
-
-    def _bluepy_handler(self):
-        """This is the bluepy IO thread
-        :return:
-        """
-        #ADDRESS OF MAGIC: 04:91:62:25:cb:6f
-        for utopicdevice in self.devices:
-            serviceuuid = utopicdevice.getServiceUUID()
-            address = utopicdevice.getAddress()
-            # address = "04:91:62:25:cb:6f"
-            print(address)
-            if serviceuuid in BleServicesAndChracteristicsChars.BLE_SERVICES:
-                try:
-                    self.periph = Peripheral(address.upper())
-                    self.periph.withDelegate(self)
-                    print("conecta")
-                except BTLEDisconnectError as e:
-                    _LOGGER.error("Disconected: %s", e)
-                except BTLEException as e:
-                    _LOGGER.error("Error: %s", e)
-                if self.periph is not None:
-                    service = self.periph.getServiceByUUID(serviceuuid)
-                    print(service)
-                    #for charact in service.getCharacteristics():
-                    descs = service.getDescriptors()
-                    for desc in descs:
-                        str_uuid = str(desc.uuid).lower()
-                        print(str_uuid, desc.handle)
-                        if str_uuid in BleServicesAndChracteristicsChars.BLE_WRITE_CHARACTERISTICS:
-                            utopicdevice.setWriteCharact(desc.handle)
-                        if str_uuid in BleServicesAndChracteristicsChars.CLIENT_CHARACTERISTIC_CONFIG:
-                            utopicdevice.setNotifyCharact(desc.handle)
-                        if str_uuid in BleServicesAndChracteristicsChars.BLE_READ_CHARACTERISTICS:
-                            #state = self.kv2dict(charact.read().decode())
-                            #print(state)
-                            utopicdevice.setReadCharact(desc.handle)
-            subscribe_bytes = b'\x01\x00'
-            if utopicdevice.getReadCharact() is not None and utopicdevice.getWriteCharact() is not None:
-                response = self.periph.writeCharacteristic(utopicdevice.getNotifyCharact(), subscribe_bytes, withResponse=True)
-                print(response)
-                # now that we're subscribed for notifications, waiting for TX/RX...
-                while True:
-                    while not self._tx_queue.empty():
-                        msg = self._tx_queue.get_nowait()
-                        msg_bytes = bytes(msg, encoding="utf-8")
-                        self.periph.writeCharacteristic(utopicdevice.getWriteCharact(), msg_bytes)
-
-                    self.periph.waitForNotifications(1.0)
-            else:
-                print("not read")
-            self.utopicdevices.append(utopicdevice)
-    
-    def kv2dict(kvstr, sep=";"):
-        result = {}
-        for x in kvstr.split(sep, 50):
-            (k, v) = x.split("=", 2)
-            result[k] = v
-        return result
-
-    def get_key(self):
-        return self.utopicKey
-
-    def getDevices(self):
-        return self.utopicdevices
-
-    def onDataReceived(self, data):
-        #String data = new String(dataRaw);
-        if(data.contains("DEV_KEY:")):
-            key = data.substring(8,data.length())
-            self.utopicKey = key
-            # Database.getInstance().addNewBarrel(UtopicDevice.SelectedUtopicDevice.getMacId(),UtopicDevice.SelectedUtopicDevice.getName(),SelectedTag);
-            # RecognitionState = eRecognitionState.S2_SENDING_OPEN;
-
-    # Utopic
-    def create_operation(self, type):
-        if type in (OperationType.GET_KEY, OperationType.DISCONNECT, OperationType.GET_CHECK_IN_OUT_TIMES, OperationType.GET_AUTO_LOCK_DAY_TIMES, OperationType.LEARN_SUCCESS):
-            return type
-        else:
-            utopicKey = self.utopicdevices.getAddress()
-            myMacAdress = '22:33:44:55:66:77' #GetMacAdress()
-            userKey = ""
-            for pos in myMacAdress.split(":"):
-                userKey += pos
-            print(userKey)
-            counter=0
-            counter+=1
-
-            # hashit = counter + type + settings
-            # self.key = base64.b64encode(hashlib.md5(hashit.encode()).digest())[:16]
-            # try:
-            #     auth.write("M=0;K=".encode() + self.key, True)
-            # except:
-            #     print("ERROR: failed to unlock %s - wrong pincode?" % self.name)
-            # return not self.locked
-
-            # Encryption encryp = new Encryption(new BigInteger(userKey.trim(), 16).longValue(), utopicKey);
-            # byte[] key = encryp.encrypt(counter, operation, settings);
-            # return key;
-
-    def send(self, message):
-        """Call this function to send a BLE message over the UART service
-        :param message: Message to send
-        :return:
-        """
-
-        # put the message in the TX queue
-        self._tx_queue.put_nowait(message)
-
-Ble = BLEMagic()
+    except KeyboardInterrupt:
+        print("\n⛔ Остановлено пользователем.")
+        sys.exit(0)
+    except Exception as e:
+        _LOGGER.error("Непредвиденная ошибка: %s", e)
+        time.sleep(1)
+        sys.exit(1)
