@@ -24,7 +24,7 @@ jobs:
         uses: hacs/action@main
         with:
           category: "integration"
-          repository: "Satimaro/elkbledom_fastlink"
+          repository: "Satimaro/elkbledom-fastlink"
           ignore: "topics"
           comment: false
 
