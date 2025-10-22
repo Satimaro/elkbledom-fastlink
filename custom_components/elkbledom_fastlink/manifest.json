@@ -1,7 +1,6 @@
 {
   "domain": "elkbledom_fastlink",
   "name": "ELK-BLEDOM FastLink",
-  "brand": "elkbledom_fastlink",
   "after_dependencies": ["hassio", "homeassistant"],
   "bluetooth": [
     { "local_name": "ELK-BLEDDM*" },
