@@ -1,0 +1,28 @@
+name: Validate with hassfest
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  hassfest-validation:
+    name: Hassfest Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run hassfest validation
+        uses: home-assistant/actions/hassfest@master
+
+      - name: Show success message
+        if: success()
+        run: echo "✅ Hassfest validation completed successfully!"
+
+      - name: Fail message
+        if: failure()
+        run: echo "❌ Hassfest validation failed. Check the logs for details."
