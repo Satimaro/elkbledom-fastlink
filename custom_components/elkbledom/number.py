@@ -1,82 +1,71 @@
 from __future__ import annotations
 
-from homeassistant.components.number import (
-    NumberEntity,
-    NumberEntityDescription,
-)
+import logging
+from homeassistant.components.number import NumberEntity
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers import device_registry
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .elkbledom import BLEDOMInstance
 from .const import DOMAIN
 
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers import device_registry
-from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
+_LOGGER = logging.getLogger(__name__)
 
-
-import logging
-
-LOG = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Setup speed control entity."""
     instance = hass.data[DOMAIN][config_entry.entry_id]
-    await instance.update()
     async_add_entities(
-        [BLEDOMSlider(instance, "Effect Speed " + config_entry.data["name"], config_entry.entry_id)])
+        [BLEDOMSpeedControl(instance, f"Effect Speed ({config_entry.data['name']})", config_entry.entry_id)]
+    )
 
-class BLEDOMSlider(NumberEntity):
-    """Blauberg Fan entity"""
 
-    def __init__(self, bledomInstance: BLEDOMInstance, attr_name: str, entry_id: str) -> None:
+class BLEDOMSpeedControl(NumberEntity):
+    """Entity for controlling effect speed."""
+
+    _attr_mode = "slider"
+    _attr_native_min_value = 1
+    _attr_native_max_value = 31
+    _attr_native_step = 1
+    _attr_icon = "mdi:speedometer"
+
+    def __init__(self, bledomInstance: BLEDOMInstance, name: str, entry_id: str) -> None:
         self._instance = bledomInstance
-        self._attr_name = attr_name
-        self._attr_unique_id = self._instance.address
-        self._effect_speed = 0
+        self._attr_name = name
+        self._attr_unique_id = f"{self._instance.address}_speed"
+        self._effect_speed = 16  # default midpoint speed
 
     @property
-    def available(self):
-        return self._instance.is_on != None
+    def available(self) -> bool:
+        return self._instance.is_on is not None
 
     @property
-    def name(self) -> str:
-        return self._attr_name
-
-    @property
-    def unique_id(self) -> str:
-        """Return the unique id."""
-        return self._attr_unique_id
-
-    @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int:
         return self._effect_speed
 
     @property
-    def device_info(self):
-        """Return device info."""
+    def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={
-                # Serial numbers are unique identifiers within a specific domain
-                (DOMAIN, self._instance.address)
-            },
+            identifiers={(DOMAIN, self._instance.address)},
             name=self.name,
-            connections={(device_registry.CONNECTION_NETWORK_MAC,
-                          self._instance.address)},
-        )
-
-    @property
-    def entity_info(self):
-        NumberEntityDescription(
-            key=self.name,
-            native_max_value=255,
-            native_min_value=0,
+            connections={(device_registry.CONNECTION_NETWORK_MAC, self._instance.address)},
+            manufacturer="ELK-BLEDOM",
+            model="RGB Controller",
         )
 
     async def async_set_native_value(self, value: float) -> None:
-        """Update the current value."""
-        await self._instance.set_effect_speed(int(value))
-        self._effect_speed = value
+        """Send BLE speed command."""
+        try:
+            value_int = int(max(1, min(value, 31)))
+            await self._instance.set_effect_speed(value_int)
+            self._effect_speed = value_int
+            self.async_write_ha_state()
+            _LOGGER.debug("%s: effect speed set to %d", self._instance.name, value_int)
+        except Exception as e:
+            _LOGGER.error("Failed to set effect speed: %s", e)
