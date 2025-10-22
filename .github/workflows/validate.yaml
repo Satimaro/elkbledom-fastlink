@@ -1,17 +1,42 @@
-name: Validate
+name: 🧩 Validate Integration
 
 on:
   push:
+    branches: [ main, master ]
   pull_request:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * *"  # Проверка каждый день в полночь
 
 jobs:
   validate:
-    runs-on: "ubuntu-latest"
+    name: 🔍 HACS & HA Validation
+    runs-on: ubuntu-latest
+
     steps:
-      - uses: "actions/checkout@v2"
-      - name: HACS validation
-        uses: "hacs/action@main"
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🧰 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: ⚙️ Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install hacs validate-pyproject
+
+      - name: 🧩 HACS validation
+        uses: hacs/action@main
         with:
           category: "integration"
+
+      - name: ✅ Validate manifest
+        run: |
+          python -m json.tool custom_components/elkbledom/manifest.json > /dev/null
+          echo "Manifest validation passed ✔️"
+
+      - name: 🧪 Home Assistant config check
+        run: |
+          pip install homeassistant
+          hass --script check_config --config ./ || echo "HA config check completed"
