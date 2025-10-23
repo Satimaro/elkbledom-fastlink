@@ -45,7 +45,7 @@ def retry_bluetooth_connection_error(func: WrapFuncType) -> WrapFuncType:
                     LOGGER.error("%s: BLE retry exhausted: %s", self.name, err)
                     raise
                 await asyncio.sleep(BLEAK_BACKOFF_TIME)
-            except BLEAK_RETRY_EXCEPTIONS as err:
+            except BLEAK_EXCEPTIONS as err:
                 if attempt == DEFAULT_ATTEMPTS - 1:
                     LOGGER.error("%s: BLE exception: %s", self.name, err)
                     raise
@@ -69,22 +69,29 @@ class BLEDOMInstance:
         self._client: BleakClientWithServiceCache | None = None
         self._connect_lock = asyncio.Lock()
         self._cached_services: BleakGATTServiceCollection | None = None
+        self._write_uuid = None
 
-        # Текущее состояние
+        # Состояние устройства
         self._is_on = False
         self._rgb_color: Tuple[int, int, int] = (255, 255, 255)
         self._brightness: int = 255
         self._color_temp_kelvin: int = 5000
         self._effect_speed: int = 16
         self._last_effect: int | None = None
-
-        # Температурный диапазон
         self._min_color_temp_kelvin = 2700
         self._max_color_temp_kelvin = 6500
 
         self._detect_model()
-        asyncio.create_task(self._ensure_connected())
+
+        # 🔹 Отложенное подключение, чтобы избежать "Operation in progress"
+        asyncio.create_task(self._delayed_connect())
+
+        # 🔹 Постоянный мониторинг связи
         asyncio.create_task(self._heartbeat())
+
+    async def _delayed_connect(self):
+        await asyncio.sleep(3)
+        await self._ensure_connected()
 
     # ----------------------------------------------------------------
     # Свойства
@@ -123,13 +130,22 @@ class BLEDOMInstance:
         self._turn_off_cmd = TURN_OFF_CMD[0]
 
     # ----------------------------------------------------------------
-    # Подключение BLE
+    # Подключение BLE (устойчивое, с защитой)
     # ----------------------------------------------------------------
     async def _ensure_connected(self):
         if self._client and self._client.is_connected:
             return
+
+        if self._connect_lock.locked():
+            LOGGER.debug("%s: connection already in progress", self.name)
+            return
+
         async with self._connect_lock:
             try:
+                if self._client and self._client.is_connected:
+                    return
+
+                LOGGER.debug("%s: connecting to %s", self.name, self.address)
                 client = await establish_connection(
                     BleakClientWithServiceCache,
                     self._device,
@@ -137,20 +153,30 @@ class BLEDOMInstance:
                     self._disconnected,
                     cached_services=self._cached_services,
                 )
+
                 self._client = client
                 self._cached_services = client.services
+
                 for ch in WRITE_CHARACTERISTIC_UUIDS:
                     c = client.services.get_characteristic(ch)
                     if c:
                         self._write_uuid = c
                         break
-                LOGGER.info("%s connected", self._device.name)
+
+                LOGGER.info("%s connected successfully", self._device.name)
             except Exception as e:
+                msg = str(e).lower()
+                if "in progress" in msg or "already" in msg:
+                    LOGGER.warning("%s: BLE operation already in progress, retrying later", self.name)
+                    await asyncio.sleep(5)
+                    asyncio.create_task(self._ensure_connected())
+                    return
                 LOGGER.error("%s: connection failed: %s", self._device.name, e)
-                await asyncio.sleep(5)
+                await asyncio.sleep(10)
                 asyncio.create_task(self._ensure_connected())
 
     def _disconnected(self, _client):
+        LOGGER.warning("%s: BLE disconnected, scheduling reconnect", self.name)
         asyncio.create_task(self._ensure_connected())
 
     async def _heartbeat(self):
@@ -212,7 +238,7 @@ class BLEDOMInstance:
         self._is_on = True
 
     # ----------------------------------------------------------------
-    # Симуляция цветовой температуры (лампово-оранжевая)
+    # Симуляция цветовой температуры
     # ----------------------------------------------------------------
     @retry_bluetooth_connection_error
     async def set_color_temp_kelvin(self, value: int, brightness: int = 255):
@@ -222,8 +248,8 @@ class BLEDOMInstance:
         k = max(k_min, min(value, k_max))
         self._color_temp_kelvin = k
 
-        warm = (255, 77, 12)   # насыщенно-оранжевый, ламповый
-        cool = (255, 255, 255) # холодный белый
+        warm = (255, 77, 12)
+        cool = (255, 255, 255)
         t = (k - k_min) / (k_max - k_min) if k_max > k_min else 1.0
 
         r = int(warm[0] + (cool[0] - warm[0]) * t)
@@ -258,7 +284,7 @@ class BLEDOMInstance:
             LOGGER.error("%s: ошибка установки эффекта: %s", self.name, e)
 
     # ----------------------------------------------------------------
-    # Скорость эффектов (1–31)
+    # Скорость эффектов
     # ----------------------------------------------------------------
     @retry_bluetooth_connection_error
     async def set_effect_speed(self, speed: int):
@@ -266,7 +292,6 @@ class BLEDOMInstance:
         self._effect_speed = max(1, min(int(speed), 31))
         await self._write([0x7E, 0x00, 0x02, self._effect_speed, 0x03, 0x00, 0x00, 0x00, 0xEF])
         LOGGER.debug("%s: скорость эффекта %d", self.name, self._effect_speed)
-        # если эффект уже активен — обновим его
         if self._last_effect:
             await asyncio.sleep(0.05)
             await self._write([0x7E, 0x00, 0x03, self._last_effect, 0x03, 0x00, 0x00, 0x00, 0xEF])
