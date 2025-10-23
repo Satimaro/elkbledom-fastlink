@@ -1,8 +1,108 @@
-# 💡 ELK-BLEDOM FastLink
+<p align="center">
+  <img src="brands/elkbledom_fastlink/logo.png" alt="ELK-BLEDOM FastLink Logo" width="100%">
+</p>
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://hacs.xyz/) [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Ready-41BDF5?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io/)
-  
-[🇷🇺 Русский](#-на-русском) | [🇬🇧 English](#-in-english)
+<p align="center">
+  <img src="brands/elkbledom_fastlink/icon.png" width="120" height="120" alt="ELK-BLEDOM FastLink Icon">
+</p>
+
+<h1 align="center">💡 ELK-BLEDOM FastLink</h1>
+
+<p align="center">
+  <em>Fast & Stable BLE integration for ELK-BLEDOM lights in Home Assistant</em><br>
+  <em>Быстрая и стабильная BLE-интеграция для лент ELK-BLEDOM в Home Assistant</em>
+</p>
+
+<p align="center">
+  <a href="https://hacs.xyz/">
+    <img src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge" alt="HACS Custom">
+  </a>
+  <a href="https://www.home-assistant.io/">
+    <img src="https://img.shields.io/badge/Home%20Assistant-Ready-41BDF5?style=for-the-badge&logo=home-assistant" alt="Home Assistant Ready">
+  </a>
+</p>
+
+<p align="center">
+  <a href="#-in-english">🇬🇧 English</a> |
+  <a href="#-на-русском">🇷🇺 Русский</a>
+</p>
+
+---
+
+## 🇬🇧 In English
+
+> 🧠 Improved version of **ELK-BLEDOM** integration for Home Assistant  
+> ⚡ Faster, more stable, with full effect support, smooth brightness control, and RGB-based color temperature emulation.
+
+---
+
+### 🚀 Key Features
+
+✅ Persistent BLE connection (no sleep or lag)  
+✅ Instant response and stable control  
+✅ Smooth brightness curve with precise levels  
+✅ Fully functional effects with adjustable speed  
+✅ RGB-based color temperature emulation (warm ↔ cool)  
+✅ Optimized BLE command timing for **5050 RGB** LED strips  
+✅ Advanced reconnect and auto-update logic  
+
+---
+
+### 🛠️ Installation via HACS
+
+1. Open **HACS → Integrations → Three dots → Custom repositories**  
+2. Add this repository:  
+   `https://github.com/Satimaro/elkbledom-fastlink`  
+   Type: **Integration**  
+3. Find **ELK-BLEDOM FastLink** and install it  
+4. Restart Home Assistant  
+5. Add the light via **Settings → Integrations → ELK-BLEDOM FastLink**
+
+---
+
+### ⚙️ Compatibility
+
+| Controller | Status |
+|-------------|---------|
+| ELK-BLEDOM  | ✅ Full |
+| LEDBLE      | ✅ Full |
+| MELK        | ✅ Full |
+| ELK-BULB / BULB2 | ✅ Full |
+| RGB 5050 LED Strip | ✅ Full |
+
+---
+
+### 🧩 Improvements over the Original
+
+- 🔄 Rewritten BLE connection logic (speed + stability)  
+- 🚀 Instant reconnect after disconnection  
+- 💡 Fixed and smoothed brightness scaling  
+- 🌈 Full effect system with adjustable speed  
+- 🔥 Added RGB color temperature emulation  
+- 🧱 More resilient to BLE timeouts and errors  
+- 🧰 Full Home Assistant UI integration  
+
+---
+
+### 📦 Integration Info
+
+- **Domain:** `elkbledom_fastlink`  
+- **Platforms:** `light`, `number`  
+- **Requirements:** `bleak >= 0.22.2`, `bleak-retry-connector >= 3.5.0`  
+
+---
+
+### 👨‍💻 Author
+
+Developed and enhanced by **Satimaro (Ukraine)** 🇺🇦  
+Original base: [dave-code-ruiz/elkbledom](https://github.com/dave-code-ruiz/elkbledom)
+
+---
+
+### ⭐ Support the Project
+
+If you like this integration — give it a ⭐ on GitHub!  
+Help others discover a faster, more stable ELK-BLEDOM experience ❤️  
 
 ---
 
@@ -28,8 +128,9 @@
 ### 🛠️ Установка через HACS
 
 1. Открой **HACS → Интеграции → Три точки → Пользовательские репозитории**  
-2. Добавь ссылку на репозиторий: https://github.com/Satimaro/elkbledom-fastlink
-Тип: **Integration**
+2. Добавь ссылку на репозиторий:  
+   `https://github.com/Satimaro/elkbledom-fastlink`  
+   Тип: **Integration**  
 3. Найди **ELK-BLEDOM FastLink** в списке и установи  
 4. Перезапусти Home Assistant  
 5. Добавь устройство через **Настройки → Интеграции → ELK-BLEDOM FastLink**
@@ -79,81 +180,3 @@
 
 Если интеграция тебе понравилась — поставь ⭐ на GitHub!  
 Это поможет другим пользователям найти стабильную и быструю версию ELK-BLEDOM ❤️  
-
----
-
----
-
-## 🇬🇧 In English
-
-> 🧠 Improved version of **ELK-BLEDOM** integration for Home Assistant  
-> ⚡ Faster, more stable, with full effect support, smooth brightness control, and RGB-based color temperature emulation.
-
----
-
-### 🚀 Key Features
-
-✅ Persistent BLE connection (no sleep or lag)  
-✅ Instant response and stable control  
-✅ Smooth brightness curve with precise levels  
-✅ Fully functional effects with adjustable speed  
-✅ RGB-based color temperature emulation (warm ↔ cool)  
-✅ Optimized BLE command timing for **5050 RGB** LED strips  
-✅ Advanced reconnect and auto-update logic  
-
----
-
-### 🛠️ Installation via HACS
-
-1. Open **HACS → Integrations → Three dots → Custom repositories**  
-2. Add this repository: https://github.com/Satimaro/elkbledom-fastlink
-Type: **Integration**
-3. Find **ELK-BLEDOM FastLink** and install it  
-4. Restart Home Assistant  
-5. Add the light via **Settings → Integrations → ELK-BLEDOM FastLink**
-
----
-
-### ⚙️ Compatibility
-
-| Controller | Status |
-|-------------|---------|
-| ELK-BLEDOM  | ✅ Full |
-| LEDBLE      | ✅ Full |
-| MELK        | ✅ Full |
-| ELK-BULB / BULB2 | ✅ Full |
-| RGB 5050 LED Strip | ✅ Full |
-
----
-
-### 🧩 Improvements over the Original
-
-- 🔄 Rewritten BLE connection logic (speed + stability)  
-- 🚀 Instant reconnect after disconnection  
-- 💡 Fixed and smoothed brightness scaling  
-- 🌈 Full effect system with adjustable speed  
-- 🔥 Added RGB color temperature emulation  
-- 🧱 More resilient to BLE timeouts and errors  
-- 🧰 Full Home Assistant UI integration  
-
----
-
-### 📦 Integration Info
-
-- **Domain:** `elkbledom_fastlink`  
-- **Platforms:** `light`, `number`  
-- **Requirements:** `bleak >= 0.22.2`, `bleak-retry-connector >= 3.5.0`  
-
----
-
-### 👨‍💻 Author
-
-Developed and enhanced by **Satimaro (Ukraine)** 🇺🇦  
-Original base: [dave-code-ruiz/elkbledom](https://github.com/dave-code-ruiz/elkbledom)
-
----
-
-### ⭐ Support the Project
-
-If you like this integration — give it a ⭐ on GitHub!  
-Help others discover a faster, more stable ELK-BLEDOM experience ❤️
