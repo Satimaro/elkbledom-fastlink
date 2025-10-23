@@ -1,8 +1,4 @@
 <p align="center">
-  <img src="brands/elkbledom_fastlink/logo.png" alt="ELK-BLEDOM FastLink Logo" width="100%">
-</p>
-
-<p align="center">
   <img src="brands/elkbledom_fastlink/icon.png" width="120" height="120" alt="ELK-BLEDOM FastLink Icon">
 </p>
 
@@ -11,6 +7,12 @@
 <p align="center">
   <em>Fast & Stable BLE integration for ELK-BLEDOM lights in Home Assistant</em><br>
   <em>Быстрая и стабильная BLE-интеграция для лент ELK-BLEDOM в Home Assistant</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/Bluetooth-0082FC?style=for-the-badge&logo=bluetooth&logoColor=white" alt="Bluetooth">
+  <img src="https://img.shields.io/badge/Home%20Assistant-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white" alt="Home Assistant">
 </p>
 
 <p align="center">
