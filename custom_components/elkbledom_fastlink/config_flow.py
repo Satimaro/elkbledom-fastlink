@@ -21,13 +21,14 @@ MANUAL_MAC = "manual"
 
 
 class BLEDOMFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+    """Основной поток настройки интеграции ELK-BLEDOM FastLink."""
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     def __init__(self) -> None:
-        self.mac = None
-        self.name = None
-        self._discovered_devices = []
+        self.mac: str | None = None
+        self.name: str | None = None
+        self._discovered_devices: list[dict[str, str]] = []
 
     # =========================================================
     # Автообнаружение Bluetooth
@@ -91,7 +92,7 @@ class BLEDOMFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 continue
             if any(dev["address"] == d.address for dev in self._discovered_devices):
                 continue
-            if any(x in d.name.upper() for x in ["ELK", "LED", "MELK"]):
+            if d.name and any(x in d.name.upper() for x in ["ELK", "LED", "MELK"]):
                 self._discovered_devices.append({"address": d.address, "name": d.name})
 
         if not self._discovered_devices:
@@ -168,23 +169,29 @@ class BLEDOMFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     # =========================================================
     @staticmethod
     @callback
-    def async_get_options_flow(entry: config_entries.ConfigEntry):
-        return OptionsFlowHandler(entry)
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry):
+        """Возврат обработчика опций."""
+        return OptionsFlowHandler(config_entry)
 
 
 # =========================================================
 # Меню опций интеграции
 # =========================================================
 class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Меню настроек интеграции (Options Flow)."""
+
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
+        super().__init__()
+        self._config_entry = config_entry  # ✅ Современный способ хранения entry
 
     async def async_step_init(self, _user_input=None):
+        """Начальный шаг."""
         return await self.async_step_user()
 
     async def async_step_user(self, user_input=None):
+        """Основной экран опций."""
         errors = {}
-        options = self.config_entry.options or {CONF_RESET: False, CONF_DELAY: 120}
+        options = self._config_entry.options or {CONF_RESET: False, CONF_DELAY: 120}
 
         if user_input is not None:
             return self.async_create_entry(
