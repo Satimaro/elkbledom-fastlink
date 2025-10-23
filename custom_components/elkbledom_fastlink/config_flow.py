@@ -134,7 +134,7 @@ class BLEDOMFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_MAC: self.mac,
                     "name": self.name,
                     CONF_RESET: False,
-                    CONF_DELAY: 120,
+                    CONF_DELAY: 0,
                 },
             )
         except Exception as e:
@@ -191,7 +191,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_user(self, user_input=None):
         """Основной экран опций."""
         errors = {}
-        options = self._config_entry.options or {CONF_RESET: False, CONF_DELAY: 120}
+        options = self._config_entry.options or {CONF_RESET: False, CONF_DELAY: 0}
 
         if user_input is not None:
             return self.async_create_entry(

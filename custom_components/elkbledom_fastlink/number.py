@@ -19,7 +19,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Setup speed control entity."""
+    """Setup effect speed control entity."""
     instance = hass.data[DOMAIN][config_entry.entry_id]
     async_add_entities(
         [BLEDOMSpeedControl(instance, f"Effect Speed ({config_entry.data['name']})", config_entry.entry_id)]
@@ -27,7 +27,7 @@ async def async_setup_entry(
 
 
 class BLEDOMSpeedControl(NumberEntity):
-    """Entity for controlling effect speed."""
+    """Entity for controlling ELK-BLEDOM effect speed."""
 
     _attr_mode = "slider"
     _attr_native_min_value = 1
@@ -39,14 +39,17 @@ class BLEDOMSpeedControl(NumberEntity):
         self._instance = bledomInstance
         self._attr_name = name
         self._attr_unique_id = f"{self._instance.address}_speed"
-        self._effect_speed = 16  # default midpoint speed
+        self._effect_speed = getattr(self._instance, "_effect_speed", 16)
+        self._entry_id = entry_id
 
     @property
     def available(self) -> bool:
-        return self._instance.is_on is not None
+        """Device is available if BLE client is connected."""
+        return bool(getattr(self._instance, "_client", None) and self._instance._client.is_connected)
 
     @property
     def native_value(self) -> int:
+        """Return the current effect speed."""
         return self._effect_speed
 
     @property
@@ -60,7 +63,7 @@ class BLEDOMSpeedControl(NumberEntity):
         )
 
     async def async_set_native_value(self, value: float) -> None:
-        """Send BLE speed command."""
+        """Send BLE speed command to device."""
         try:
             value_int = int(max(1, min(value, 31)))
             await self._instance.set_effect_speed(value_int)
