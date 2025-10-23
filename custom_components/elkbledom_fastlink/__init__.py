@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant, Event
 from homeassistant.const import CONF_MAC, EVENT_HOMEASSISTANT_STOP, Platform
 
 from .const import DOMAIN, CONF_RESET, CONF_DELAY
-from .elkbledom_fastlink import BLEDOMInstance
+from .elkbledom import BLEDOMInstance
 
 LOGGER = logging.getLogger(__name__)
 
