@@ -50,16 +50,16 @@
 
 ---
 
-### 🛠️ Installation via HACS
+### 🛠️ Installation via [HACS](https://hacs.xyz/) (recommended)
 
-1. Open **HACS → Integrations → Three dots → Custom repositories**  
-2. Add this repository:  
-   `https://github.com/Satimaro/elkbledom-fastlink`  
-   Type: **Integration**  
-3. Find **ELK-BLEDOM FastLink** and install it  
-4. Restart Home Assistant  
-5. Add the light via **Settings → Integrations → ELK-BLEDOM FastLink**
+1. Open **HACS**  
+2. Find **elkbledom_fastlink** and install it  
+3. Restart Home Assistant  
+4. Add the light via **Settings → Integrations → Elkbledom-FastLink**
 
+### 🛠️ Manual installation
+
+You can manually clone this repository inside `config/custom_components/` folder.
 ---
 
 ### ⚙️ Compatibility
@@ -127,16 +127,16 @@ Help others discover a faster, more stable ELK-BLEDOM experience ❤️
 
 ---
 
-### 🛠️ Установка через HACS
+### 🛠️ Установка через [HACS](https://hacs.xyz/) (рекомендовано) 
 
-1. Открой **HACS → Интеграции → Три точки → Пользовательские репозитории**  
-2. Добавь ссылку на репозиторий:  
-   `https://github.com/Satimaro/elkbledom-fastlink`  
-   Тип: **Integration**  
-3. Найди **ELK-BLEDOM FastLink** в списке и установи  
-4. Перезапусти Home Assistant  
-5. Добавь устройство через **Настройки → Интеграции → ELK-BLEDOM FastLink**
+1. Откройте **HACS**  
+2. Найдите **elkbledom_fastlink** в списке и установи  
+3. Перезапустите Home Assistant  
+4. Добавьте устройство через **Настройки → Интеграции → Elkbledom-FastLink**
 
+### 🛠️ Ручная установка
+
+Вы должны вручную клонировать этот репозиторий в `config/custom_components/` папку.
 ---
 
 ### ⚙️ Совместимость
