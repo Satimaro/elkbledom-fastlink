@@ -59,7 +59,8 @@
 
 ### 🛠️ Manual installation
 
-You can manually clone this repository inside `config/custom_components/` folder.
+ - You can manually clone this repository inside `config/custom_components/` folder.
+
 ---
 
 ### ⚙️ Compatibility
@@ -136,7 +137,7 @@ Help others discover a faster, more stable ELK-BLEDOM experience ❤️
 
 ### 🛠️ Ручная установка
 
-Вы должны вручную клонировать этот репозиторий в `config/custom_components/` папку.
+ - Вы должны вручную клонировать этот репозиторий в `config/custom_components/` папку.
 ---
 
 ### ⚙️ Совместимость
