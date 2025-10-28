@@ -254,9 +254,17 @@ class BLEDOMInstance:
 
     @retry_bluetooth_connection_error
     async def set_effect(self, value: int):
-        """Включение эффекта (в JSON не сохраняем)."""
+        """Включение/отключение эффекта (в JSON не сохраняем).
+        value == 0x00 или None => отключить эффект и вернуться к статике.
+        """
         try:
             await self._ensure_connected()
+            if value in (0x00, None):
+                # Возврат к статическому цвету и яркости
+                await self.set_color(self._rgb_color, self._brightness)
+                self._last_effect = None
+                return
+            # Иначе — отправляем команду включения эффекта
             await self._write([0x7E, 0x00, 0x03, value, 0x03, 0x00, 0x00, 0x00, 0xEF])
             self._last_effect = value
         except Exception as e:

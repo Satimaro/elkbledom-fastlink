@@ -29,7 +29,8 @@ async def async_setup_entry(
 class BLEDOMLight(LightEntity):
     _attr_supported_color_modes = {ColorMode.RGB, ColorMode.COLOR_TEMP}
     _attr_color_mode = ColorMode.RGB
-    _attr_effect_list = list(EFFECTS_MAP.keys())
+    # Делаем "none" первым пунктом для удобства
+    _attr_effect_list = ["none"] + [k for k in EFFECTS_MAP.keys() if k != "none"]
     _attr_supported_features = LightEntityFeature.EFFECT
 
     def __init__(self, instance: BLEDOMInstance, name: str, entry_id: str) -> None:
@@ -78,7 +79,9 @@ class BLEDOMLight(LightEntity):
         if ATTR_EFFECT in kwargs:
             effect_name = kwargs[ATTR_EFFECT]
             if effect_name in EFFECTS_MAP:
-                await self._instance.set_effect(EFFECTS_MAP[effect_name])
+                effect_id = EFFECTS_MAP[effect_name]
+                # "none" => вернуть статический свет (обработается в set_effect)
+                await self._instance.set_effect(effect_id)
 
         if not kwargs:
             await self._instance.set_color(self._instance.rgb_color)

@@ -11,6 +11,10 @@ CONF_DELAY = "delay"
 # Эффекты (анимации)
 # =========================================================
 class EFFECTS(Enum):
+    # Специальный пункт для возврата к статическому свету
+    none = 0x00
+
+    # Ниже — реальные анимации контроллера
     jump_red_green_blue = 0x87
     jump_red_green_blue_yellow_cyan_magenta_white = 0x88
     crossfade_red_green_blue = 0x89
@@ -40,7 +44,6 @@ class EFFECTS(Enum):
 # =========================================================
 EFFECTS_list = [e.name for e in EFFECTS]
 EFFECTS_MAP = {e.name: e.value for e in EFFECTS}
-
 
 # =========================================================
 # Дни недели (для таймеров и расписаний)
