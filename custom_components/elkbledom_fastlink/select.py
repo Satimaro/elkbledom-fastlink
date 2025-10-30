@@ -5,7 +5,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers import device_registry
-from homeassistant.const import Platform
 
 from .const import DOMAIN, BRIGHTNESS_MODES, CONF_BRIGHTNESS_MODE
 from .elkbledom import BLEDOMInstance
