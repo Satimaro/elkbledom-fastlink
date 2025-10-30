@@ -1,47 +1,43 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "data": {
-                    "mac": "Bluetooth MAC adresi",
-                    "name": "Adı"
-                },
-                "title": "Elkbledom ışığı seç. Doğrulama için ışığın görünür olmasını sağla."
-            },
-            "validate": {
-                "data": {
-                    "retry": "Bağlantıyı doğrulamayı yeniden denemek istiyor musun?",
-                    "flicker": "Işık yanıp söndü mü?"
-                },
-                "title": "Elkbledom bağlantısını doğrula"
-            },
-            "manual": {
-                "data": {
-                    "mac": "Bluetooth MAC adresi",
-                    "name": "Adı"
-                },
-                "title": "Bluetooth MAC adresini gir"
-            }
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "mac": "MAC adresi",
+          "name": "Ad"
         },
-        "error": {
-            "connect": "Elkbledom'a bağlanılamıyor"
-        },
-        "abort": {
-            "cannot_validate": "Elkbledom ışığı doğrulanamıyor",
-            "cannot_connect": "Elkbledom'a bağlanılamıyor",
-            "not_supported": "ElkBledom ???? desteklenmiyor",
-            "invalid_discovery_info": "Bluetooth aygtnda geersiz keif bilgisi"
-        }
-    },
-    "options": {
-        "step": {
-          "user": {
-            "data": {
-              "reset": "LED açıldığında renk sıfırlansın",
-              "delay": "Saniye cinsinden bağlantı kesme gecikmesi (0 hiçbir zaman bağlantıyı kesmez anlamına gelir)"
-            }
-          }
-        }
+        "title": "ELK-BLEDOM FastLink ekle",
+        "description": "Keşfedilen bir cihaz seçin veya MAC adresini manuel olarak girin."
       },
-    "title": "Elkbledom-FastLink"
+      "manual": {
+        "data": {
+          "mac": "MAC adresi",
+          "name": "Ad"
+        },
+        "title": "Bluetooth MAC adresini girin"
+      }
+    },
+    "error": {
+      "connect": "Elkbledom'a bağlanılamadı"
+    },
+    "abort": {
+      "cannot_validate": "Elkbledom doğrulanamadı",
+      "cannot_connect": "Elkbledom'a bağlanılamadı",
+      "not_supported": "Elkbledom cihazı desteklenmiyor",
+      "invalid_discovery_info": "Geçersiz Bluetooth cihaz bilgisi"
+    }
+  },
+  "options": {
+    "step": {
+      "user": {
+        "data": {
+          "reset": "Home Assistant yeniden başlatıldığında sıfırla",
+          "delay": "Gecikme (saniye)",
+          "brightness_mode": "Parlaklık modu"
+        },
+        "title": "ELK-BLEDOM FastLink Seçenekleri",
+        "description": "Cihazın parlaklığının nasıl uygulanacağını seçin."
+      }
+    }
+  }
 }

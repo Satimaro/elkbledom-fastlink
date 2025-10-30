@@ -7,6 +7,11 @@ DOMAIN = "elkbledom_fastlink"
 CONF_RESET = "reset"
 CONF_DELAY = "delay"
 
+# Режимы яркости
+CONF_BRIGHTNESS_MODE = "brightness_mode"          # "auto" | "rgb" | "native"
+BRIGHTNESS_MODES = ["auto", "rgb", "native"]
+DEFAULT_BRIGHTNESS_MODE = "auto"
+
 # =========================================================
 # Эффекты (анимации)
 # =========================================================

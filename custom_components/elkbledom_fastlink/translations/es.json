@@ -1,47 +1,43 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "data": {
-                    "mac": "Direccion MAC Bluetooth",
-                    "name": "Nombre"
-                },
-                "title": "Elige una tira led. Asegurate de que la luz esté lista y cerca para la validacion."
-            },
-            "validate": {
-                "data": {
-                    "retry": "?Intentar de nuevo la conexión?",
-                    "flicker": "?La luz vibra?"
-                },
-                "title": "Validacion de la conexion"
-            },
-            "manual": {
-                "data": {
-                    "mac": "Direccion MAC Bluetooth",
-                    "name": "Nombre"
-                },
-                "title": "Introduce la direccion MAC del Bluetooth"
-            }
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "mac": "Dirección MAC",
+          "name": "Nombre"
         },
-        "error": {
-            "connect": "No se puede conectar con la tira led"
-        },
-        "abort": {
-            "cannot_validate": "No se puede validar la conexión",
-            "cannot_connect": "No se puede conectar con la tira led",
-            "not_supported": "Tira led no soportada",
-            "invalid_discovery_info": "No se encuentra información de la tira led"
-        }
-    },
-    "options": {
-        "step": {
-          "user": {
-            "data": {
-              "reset": "Resetear color cuando se encienda el led",
-              "delay": "Tiempo de espera para desconexión en segundos (0 para no desconectar nunca)"
-            }
-          }
-        }
+        "title": "Agregar ELK-BLEDOM FastLink",
+        "description": "Elige un dispositivo detectado o introduce la dirección MAC manualmente."
       },
-    "title": "Elkbledom-FastLink"
+      "manual": {
+        "data": {
+          "mac": "Dirección MAC",
+          "name": "Nombre"
+        },
+        "title": "Introducir dirección MAC de Bluetooth"
+      }
+    },
+    "error": {
+      "connect": "No se pudo conectar con Elkbledom"
+    },
+    "abort": {
+      "cannot_validate": "No se pudo validar el dispositivo Elkbledom",
+      "cannot_connect": "No se pudo conectar con Elkbledom",
+      "not_supported": "El dispositivo Elkbledom no es compatible",
+      "invalid_discovery_info": "Información de descubrimiento Bluetooth no válida"
+    }
+  },
+  "options": {
+    "step": {
+      "user": {
+        "data": {
+          "reset": "Restablecer al reiniciar Home Assistant",
+          "delay": "Retraso (segundos)",
+          "brightness_mode": "Modo de brillo"
+        },
+        "title": "Opciones de ELK-BLEDOM FastLink",
+        "description": "Selecciona cómo se aplica el brillo al dispositivo."
+      }
+    }
+  }
 }

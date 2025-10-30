@@ -1,48 +1,43 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "data": {
-                    "mac": "Adres MAC Bluetooth",
-                    "name": "Nazwa"
-                },
-                "title": "Wybierz światło Elkbledom. Upewnij się, że masz je w zasięgu wzroku w celu weryfikacji."
-            },
-            "validate": {
-                "data": {
-                    "retry": "Powtórzyć połączenie weryfikacyjne?",
-                    "flicker": "Czy światło migało?"
-                },
-                "title": "Weryfikacja połączenia Elkbledom"
-            },
-            "manual": {
-                "data": {
-                    "mac": "Adres MAC Bluetooth",
-                    "name": "Nazwa"
-                },
-                "title": "Wprowadź adres MAC Bluetooth"
-            }
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "mac": "Adres MAC",
+          "name": "Nazwa"
         },
-        "error": {
-            "connect": "Nie można nawiązać połączenia ze światłem Elkbledom"
-        },
-        "abort": {
-            "cannot_validate": "Nie można zweryfikować światła Elkbledom",
-            "cannot_connect": "Nie można połączyć się ze światłem Elkbledom",
-            "not_supported": "Światło Elkbledom nie jest obsługiwane",
-            "invalid_discovery_info": "Nieprawidłowe dane wykrywania urządzenia Bluetooth"
-        }
-    },
-    "options": {
-        "step": {
-          "user": {
-            "data": {
-              "reset": "Zresetuj kolor gdy LED się włączy",
-              "delay": "Czas oczekiwania na rozłączenie w sekundach (0, aby nigdy nie rozłączać)"
-            }
-          }
-        }
+        "title": "Dodaj ELK-BLEDOM FastLink",
+        "description": "Wybierz wykryte urządzenie lub wprowadź adres MAC ręcznie."
       },
-    "title": "Elkbledom-FastLink"
-
+      "manual": {
+        "data": {
+          "mac": "Adres MAC",
+          "name": "Nazwa"
+        },
+        "title": "Wprowadź adres MAC Bluetooth"
+      }
+    },
+    "error": {
+      "connect": "Nie można połączyć się z Elkbledom"
+    },
+    "abort": {
+      "cannot_validate": "Nie można zweryfikować Elkbledom",
+      "cannot_connect": "Nie można połączyć się z Elkbledom",
+      "not_supported": "Urządzenie Elkbledom nie jest obsługiwane",
+      "invalid_discovery_info": "Nieprawidłowe informacje o urządzeniu Bluetooth"
+    }
+  },
+  "options": {
+    "step": {
+      "user": {
+        "data": {
+          "reset": "Resetuj przy ponownym uruchomieniu Home Assistant",
+          "delay": "Opóźnienie (sekundy)",
+          "brightness_mode": "Tryb jasności"
+        },
+        "title": "Opcje ELK-BLEDOM FastLink",
+        "description": "Wybierz sposób zastosowania jasności urządzenia."
+      }
+    }
+  }
 }

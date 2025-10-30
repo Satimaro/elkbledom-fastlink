@@ -3,45 +3,41 @@
     "step": {
       "user": {
         "data": {
-          "mac": "Bluetooth MAC-адрес",
-          "name": "Имя устройства"
+          "mac": "MAC-адрес",
+          "name": "Имя"
         },
-        "title": "Выберите ленту Elkbledom. Убедитесь, что устройство находится в зоне видимости для проверки."
-      },
-      "validate": {
-        "data": {
-          "retry": "Повторить попытку подключения?",
-          "flicker": "Мигала ли лента при проверке?"
-        },
-        "title": "Проверка подключения Elkbledom"
+        "title": "Добавить ELK-BLEDOM FastLink",
+        "description": "Выберите найденное устройство или введите MAC-адрес вручную."
       },
       "manual": {
         "data": {
-          "mac": "Bluetooth MAC-адрес",
-          "name": "Имя устройства"
+          "mac": "MAC-адрес",
+          "name": "Имя"
         },
-        "title": "Введите Bluetooth MAC-адрес вручную"
+        "title": "Введите MAC-адрес Bluetooth"
       }
     },
     "error": {
       "connect": "Не удалось подключиться к Elkbledom"
     },
     "abort": {
-      "cannot_validate": "Не удалось проверить устройство Elkbledom",
+      "cannot_validate": "Не удалось подтвердить Elkbledom",
       "cannot_connect": "Не удалось подключиться к Elkbledom",
       "not_supported": "Устройство Elkbledom не поддерживается",
-      "invalid_discovery_info": "Неверная информация об устройстве Bluetooth"
+      "invalid_discovery_info": "Некорректная информация об устройстве Bluetooth"
     }
   },
   "options": {
     "step": {
       "user": {
         "data": {
-          "reset": "Сбрасывать цвет при включении",
-          "delay": "Задержка отключения (в секундах, 0 — не отключать)"
-        }
+          "reset": "Сброс при перезапуске Home Assistant",
+          "delay": "Задержка (в секундах)",
+          "brightness_mode": "Режим яркости"
+        },
+        "title": "Параметры ELK-BLEDOM FastLink",
+        "description": "Выберите способ управления яркостью устройства."
       }
     }
-  },
-  "title": "Elkbledom-FastLink"
+  }
 }

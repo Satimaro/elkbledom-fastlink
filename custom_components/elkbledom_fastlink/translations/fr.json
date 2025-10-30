@@ -1,48 +1,43 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "data": {
-                    "mac": "Adresse MAC Bluetooth",
-                    "name": "Nom"
-                },
-                "title": "Sélectionner une lumi?re Elkbledom."
-            },
-            "validate": {
-                "data": {
-                    "retry": "Réessayer de se connecter ?",
-                    "flicker": "La lumi?re ?-t-elle clignoté ?"
-                },
-                "title": "Valider la connexion"
-            },
-            "manual": {
-                "data": {
-                    "mac": "Adresse MAC Bluetooth",
-                    "name": "Nom"
-                },
-                "title": "Entrer une adresse MAC Bluetooth"
-            }
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "mac": "Adresse MAC",
+          "name": "Nom"
         },
-        "error": {
-            "connect": "Echec de la connexion ? Elkbledom"
+        "title": "Ajouter ELK-BLEDOM FastLink",
+        "description": "Choisissez un appareil détecté ou saisissez l'adresse MAC manuellement."
+      },
+      "manual": {
+        "data": {
+          "mac": "Adresse MAC",
+          "name": "Nom"
         },
-        "abort": {
-            "cannot_validate": "Echec de validation de la lumi?re Elkbledom",
-            "cannot_connect": "Echec de la connexion ? Elkbledom",
-            "not_supported": "La lumi?re ElkBledom n'est pas prise en charge",
-            "invalid_discovery_info": "Informations de d?couverte non valides sur le p?riph?rique Bluetooth"
-        }
+        "title": "Entrer l'adresse MAC Bluetooth"
+      }
     },
-    "options": {
-        "step": {
-            "user": {
-                "data": {
-                    "reset": "Réinitialiser la couleur ? l'allumage",
-                    "delay": "Temps d'attente pour la déconnexion en secondes(0 pour ne jamais se déconnecter)"
-                }
-            }
-        }
+    "error": {
+      "connect": "Impossible de se connecter à Elkbledom"
     },
-    "title": "Elkbledom-FastLink"
+    "abort": {
+      "cannot_validate": "Impossible de valider Elkbledom",
+      "cannot_connect": "Impossible de se connecter à Elkbledom",
+      "not_supported": "Appareil Elkbledom non pris en charge",
+      "invalid_discovery_info": "Informations de découverte Bluetooth invalides"
+    }
+  },
+  "options": {
+    "step": {
+      "user": {
+        "data": {
+          "reset": "Réinitialiser au redémarrage de Home Assistant",
+          "delay": "Délai (secondes)",
+          "brightness_mode": "Mode de luminosité"
+        },
+        "title": "Options ELK-BLEDOM FastLink",
+        "description": "Choisissez comment la luminosité est appliquée à votre appareil."
+      }
+    }
+  }
 }
-

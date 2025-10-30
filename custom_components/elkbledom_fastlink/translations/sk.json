@@ -1,47 +1,43 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "data": {
-                    "mac": "Bluetooth MAC adresa",
-                    "name": "Názov"
-                },
-                "title": "Vyberte si svetlo Elkbledom. Skontrolujte, či je svetlo v dohľade na overenie."
-            },
-            "validate": {
-                "data": {
-                    "retry": "Znova skúsiť overiť pripojenie?",
-                    "flicker": "Blikalo svetlo?"
-                },
-                "title": "Overte pripojenie Elkbledom"
-            },
-            "manual": {
-                "data": {
-                    "mac": "Bluetooth MAC adresa",
-                    "name": "Názov"
-                },
-                "title": "Zadajte adresu MAC bluetooth"
-            }
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "mac": "Adresa MAC",
+          "name": "Názov"
         },
-        "error": {
-            "connect": "Nedá sa pripojiť k Elbledom"
-        },
-        "abort": {
-            "cannot_validate": "Nie je možné overiť Elkbledom light",
-            "cannot_connect": "Nedá sa pripojiť k Elbledom",
-            "not_supported": "Svetlo Elk Bledom nie je podporovane",
-            "invalid_discovery_info": "Neplatne informacie o objaveni v zariadeni bluetooth"
-        }
-    },
-    "options": {
-        "step": {
-          "user": {
-            "data": {
-              "reset": "Resetujte farbu po zapnutí LED",
-              "delay": "Oneskorenie odpojenia v sekundách(0 sa rovná nikdy sa neodpojí)"
-            }
-          }
-        }
+        "title": "Pridať ELK-BLEDOM FastLink",
+        "description": "Vyberte zistené zariadenie alebo zadajte adresu MAC ručne."
       },
-    "title": "Elkbledom-FastLink"
+      "manual": {
+        "data": {
+          "mac": "Adresa MAC",
+          "name": "Názov"
+        },
+        "title": "Zadajte Bluetooth MAC adresu"
+      }
+    },
+    "error": {
+      "connect": "Nepodarilo sa pripojiť k Elkbledom"
+    },
+    "abort": {
+      "cannot_validate": "Nepodarilo sa overiť Elkbledom",
+      "cannot_connect": "Nepodarilo sa pripojiť k Elkbledom",
+      "not_supported": "Zariadenie Elkbledom nie je podporované",
+      "invalid_discovery_info": "Neplatné informácie o Bluetooth zariadení"
+    }
+  },
+  "options": {
+    "step": {
+      "user": {
+        "data": {
+          "reset": "Reset pri reštarte Home Assistant",
+          "delay": "Oneskorenie (sekundy)",
+          "brightness_mode": "Režim jasu"
+        },
+        "title": "Možnosti ELK-BLEDOM FastLink",
+        "description": "Vyberte, ako sa má aplikovať jas na zariadenie."
+      }
+    }
+  }
 }

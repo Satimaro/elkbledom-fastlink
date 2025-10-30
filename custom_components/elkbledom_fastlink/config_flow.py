@@ -14,7 +14,14 @@ from homeassistant.components.bluetooth import (
 import voluptuous as vol
 from homeassistant.helpers.device_registry import format_mac
 
-from .const import DOMAIN, CONF_RESET, CONF_DELAY
+from .const import (
+    DOMAIN,
+    CONF_RESET,
+    CONF_DELAY,
+    CONF_BRIGHTNESS_MODE,
+    BRIGHTNESS_MODES,
+    DEFAULT_BRIGHTNESS_MODE,
+)
 
 LOGGER = logging.getLogger(__name__)
 MANUAL_MAC = "manual"
@@ -136,6 +143,9 @@ class BLEDOMFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_RESET: False,
                     CONF_DELAY: 0,
                 },
+                options={
+                    CONF_BRIGHTNESS_MODE: DEFAULT_BRIGHTNESS_MODE
+                }
             )
         except Exception as e:
             LOGGER.error("Validation error for %s: %s", self.mac, e)
@@ -175,14 +185,14 @@ class BLEDOMFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 # =========================================================
-# Меню опций интеграции
+# Меню опций интеграции (Options Flow)
 # =========================================================
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Меню настроек интеграции (Options Flow)."""
+    """Меню настроек интеграции."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         super().__init__()
-        self._config_entry = config_entry  # ✅ Современный способ хранения entry
+        self._config_entry = config_entry
 
     async def async_step_init(self, _user_input=None):
         """Начальный шаг."""
@@ -191,7 +201,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_user(self, user_input=None):
         """Основной экран опций."""
         errors = {}
-        options = self._config_entry.options or {CONF_RESET: False, CONF_DELAY: 0}
+        options = self._config_entry.options or {
+            CONF_RESET: False,
+            CONF_DELAY: 0,
+            CONF_BRIGHTNESS_MODE: DEFAULT_BRIGHTNESS_MODE,
+        }
 
         if user_input is not None:
             return self.async_create_entry(
@@ -199,6 +213,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data={
                     CONF_RESET: user_input[CONF_RESET],
                     CONF_DELAY: user_input[CONF_DELAY],
+                    CONF_BRIGHTNESS_MODE: user_input[CONF_BRIGHTNESS_MODE],
                 },
             )
 
@@ -208,6 +223,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 {
                     vol.Optional(CONF_RESET, default=options.get(CONF_RESET)): bool,
                     vol.Optional(CONF_DELAY, default=options.get(CONF_DELAY)): int,
+                    vol.Required(
+                        CONF_BRIGHTNESS_MODE,
+                        default=options.get(CONF_BRIGHTNESS_MODE, DEFAULT_BRIGHTNESS_MODE),
+                    ): vol.In(BRIGHTNESS_MODES),
                 }
             ),
             errors=errors,

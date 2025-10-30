@@ -13,6 +13,7 @@ LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [
     Platform.LIGHT,
     Platform.NUMBER,
+    Platform.SELECT,  # добавили select-платформу для выбора режима яркости
 ]
 
 
@@ -41,7 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Регистрируем платформы
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Обработчик обновления параметров
+    # Обработчик обновления параметров (перезагрузка всей интеграции)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     # Гарантированное отключение при остановке HA
@@ -75,6 +76,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 # Перезагрузка при изменении опций
 # =========================================================
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Handle options update (reset/delay)."""
+    """Handle options update (reset/delay/brightness_mode)."""
     LOGGER.debug("Reloading ELK-BLEDOM after options change")
     await hass.config_entries.async_reload(entry.entry_id)
