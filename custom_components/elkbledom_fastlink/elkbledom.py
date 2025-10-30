@@ -2,9 +2,19 @@ import asyncio
 import logging
 import json
 import os
-from typing import Tuple, TypeVar, Callable, cast
+from typing import Tuple, TypeVar, Callable, cast, Any
 from bleak.backends.service import BleakGATTServiceCollection
-from bleak.exc import BleakDBusError
+
+# Совместимость с разными версиями bleak
+try:
+    from bleak.exc import BleakDBusError
+except Exception:
+    try:
+        from bleak.exc import BleakError as BleakDBusError
+    except Exception:
+        class BleakDBusError(Exception):
+            pass
+
 from bleak_retry_connector import (
     BleakClientWithServiceCache,
     BleakNotFoundError,
@@ -13,25 +23,31 @@ from bleak_retry_connector import (
 )
 from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.exceptions import ConfigEntryNotReady
-
 from .const import DEFAULT_BRIGHTNESS_MODE
 
 LOGGER = logging.getLogger(__name__)
 
+# ---------------------------------------------------------
+# BLE-названия и настройки
+# ---------------------------------------------------------
 NAME_ARRAY = ["ELK-BLEDDM", "ELK-BLE", "LEDBLE", "MELK", "ELK-BULB2", "ELK-BULB", "ELK-LAMPL"]
 WRITE_CHARACTERISTIC_UUIDS = ["0000fff3-0000-1000-8000-00805f9b34fb"] * 7
 TURN_ON_CMD = [[0x7E, 0x00, 0x04, 0xF0, 0x00, 0x01, 0xFF, 0x00, 0xEF]] * 7
 TURN_OFF_CMD = [[0x7E, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xEF]] * 7
-MIN_COLOR_TEMPS_K = [2700] * 7
-MAX_COLOR_TEMPS_K = [6500] * 7
+
+# Реалистичные диапазоны кельвинов для RGB-эмуляции
+MIN_COLOR_TEMPS_K = [1800] * 7
+MAX_COLOR_TEMPS_K = [7000] * 7
 
 DEFAULT_ATTEMPTS = 3
 BLEAK_BACKOFF_TIME = 0.25
 STATE_FILE = "/config/.storage/elkbledom_fastlink_state.json"
 RETRY_BACKOFF_EXCEPTIONS = (BleakDBusError,)
-WrapFuncType = TypeVar("WrapFuncType", bound=Callable[..., any])
+WrapFuncType = TypeVar("WrapFuncType", bound=Callable[..., Any])
 
-
+# ---------------------------------------------------------
+# Декоратор безопасных повторных попыток BLE
+# ---------------------------------------------------------
 def retry_bluetooth_connection_error(func: WrapFuncType) -> WrapFuncType:
     async def _async_wrap_retry(self: "BLEDOMInstance", *args, **kwargs):
         for attempt in range(DEFAULT_ATTEMPTS):
@@ -50,7 +66,9 @@ def retry_bluetooth_connection_error(func: WrapFuncType) -> WrapFuncType:
                     raise
     return cast(WrapFuncType, _async_wrap_retry)
 
-
+# ---------------------------------------------------------
+# Класс экземпляра устройства
+# ---------------------------------------------------------
 class BLEDOMInstance:
     def __init__(self, address, reset: bool, delay: int, hass) -> None:
         self.address = address
@@ -67,27 +85,29 @@ class BLEDOMInstance:
         self._cached_services: BleakGATTServiceCollection | None = None
         self._write_uuid = None
 
-        state = self._load_state()
+        # Начальные значения
         self._is_on = False
-        self._rgb_color: Tuple[int, int, int] = tuple(state.get("rgb", (255, 255, 255)))
-        self._brightness: int = state.get("brightness", 255)
-        self._color_temp_kelvin: int = state.get("color_temp", 5000)
+        self._rgb_color: Tuple[int, int, int] = (255, 255, 255)
+        self._brightness: int = 255
+        self._color_temp_kelvin: int = 5000
 
         self._effect_speed: int = 16
-        self._last_effect: int | None = None  # эффекты не сохраняем в JSON
+        self._last_effect: int | None = None
 
-        self._min_color_temp_kelvin = 2700
-        self._max_color_temp_kelvin = 6500
+        self._min_color_temp_kelvin = 1800
+        self._max_color_temp_kelvin = 7000
 
-        # Режим яркости: "auto" | "rgb" | "native"
-        self._brightness_mode: str = state.get("brightness_mode", DEFAULT_BRIGHTNESS_MODE)
+        self._brightness_mode: str = DEFAULT_BRIGHTNESS_MODE
 
         self._detect_model()
+        asyncio.create_task(self._async_init_state())
         asyncio.create_task(self._delayed_connect())
         asyncio.create_task(self._heartbeat())
 
-    # ---------------- JSON state ----------------
-    def _load_state(self):
+    # ---------------------------------------------------------
+    # JSON-состояние (асинхронно)
+    # ---------------------------------------------------------
+    def _load_state_sync(self):
         try:
             os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
             if os.path.exists(STATE_FILE):
@@ -98,41 +118,58 @@ class BLEDOMInstance:
             LOGGER.warning("Failed to load state for %s: %s", self.address, e)
         return {}
 
-    def _save_state(self):
+    async def _async_load_state(self):
+        return await self._hass.async_add_executor_job(self._load_state_sync)
+
+    def _save_state_sync(self, payload: dict | None = None):
         try:
             os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
-            data = {}
+            data: dict = {}
             if os.path.exists(STATE_FILE):
-                with open(STATE_FILE, "r", encoding="utf-8") as f:
-                    try:
+                try:
+                    with open(STATE_FILE, "r", encoding="utf-8") as f:
                         data = json.load(f)
-                    except json.JSONDecodeError:
-                        data = {}
-            data[self.address] = {
-                "rgb": self._rgb_color,
-                "brightness": self._brightness,
-                "color_temp": self._color_temp_kelvin,
-                "brightness_mode": self._brightness_mode,
-            }
+                except json.JSONDecodeError:
+                    data = {}
+
+            if payload is None:
+                payload = {
+                    "rgb": self._rgb_color,
+                    "brightness": self._brightness,
+                    "color_temp": self._color_temp_kelvin,
+                    "brightness_mode": self._brightness_mode,
+                }
+
+            data[self.address] = payload
             with open(STATE_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:
             LOGGER.error("Failed to save state for %s: %s", self.address, e)
 
-    # ---------------- Public API for mode ----------------
+    async def _async_save_state(self, payload: dict | None = None):
+        await self._hass.async_add_executor_job(self._save_state_sync, payload)
+
+    async def _async_init_state(self):
+        state = await self._async_load_state()
+        self._rgb_color = tuple(state.get("rgb", (255, 255, 255)))  # type: ignore[arg-type]
+        self._brightness = int(state.get("brightness", 255))
+        self._color_temp_kelvin = int(state.get("color_temp", 5000))
+        self._brightness_mode = str(state.get("brightness_mode", DEFAULT_BRIGHTNESS_MODE))
+
+    # ---------------------------------------------------------
+    # Режим яркости и переподключение
+    # ---------------------------------------------------------
     async def apply_brightness_mode(self, mode: str):
-        """Установить режим яркости и безопасно переподключиться."""
         mode = (mode or DEFAULT_BRIGHTNESS_MODE).lower()
         if mode not in ("auto", "rgb", "native"):
             mode = DEFAULT_BRIGHTNESS_MODE
         if mode == self._brightness_mode:
             return
         self._brightness_mode = mode
-        self._save_state()
+        await self._async_save_state()
         await self.reconnect()
 
     async def reconnect(self):
-        """Безопасный reconnect (после смены режима и т.п.)."""
         try:
             await self.stop()
         except Exception:
@@ -141,13 +178,16 @@ class BLEDOMInstance:
         await self._ensure_connected()
         LOGGER.info("%s: reconnected after mode change (%s)", self.name, self._brightness_mode)
 
-    # ---------------- Properties (нужны light/number) ----------------
+    # ---------------------------------------------------------
+    # Свойства
+    # ---------------------------------------------------------
     @property
     def name(self):
         return self._device.name if self._device else self.address
 
     @property
     def is_on(self) -> bool:
+        """Состояние включения устройства."""
         return getattr(self, "_is_on", False)
 
     @property
@@ -162,7 +202,9 @@ class BLEDOMInstance:
     def color_temp_kelvin(self) -> int:
         return getattr(self, "_color_temp_kelvin", 5000)
 
-    # ---------------- BLE ----------------
+    # ---------------------------------------------------------
+    # Подключение BLE
+    # ---------------------------------------------------------
     async def _delayed_connect(self):
         await asyncio.sleep(3)
         await self._ensure_connected()
@@ -212,7 +254,9 @@ class BLEDOMInstance:
                 await self._ensure_connected()
             await asyncio.sleep(30)
 
-    # ---------------- Commands ----------------
+    # ---------------------------------------------------------
+    # BLE-команды
+    # ---------------------------------------------------------
     @retry_bluetooth_connection_error
     async def _write(self, data: list[int]):
         await self._ensure_connected()
@@ -221,32 +265,26 @@ class BLEDOMInstance:
     @retry_bluetooth_connection_error
     async def turn_on(self):
         await self._write(self._turn_on_cmd)
-        # короткая пауза, чтобы контроллер «отпустил» заводской белый
         await asyncio.sleep(0.2)
-        # восстанавливаем RGB с учётом текущей яркости
         await self.set_color(self._rgb_color, self._brightness)
         self._is_on = True
 
     @retry_bluetooth_connection_error
     async def turn_off(self):
-        self._save_state()
+        await self._async_save_state()
         await self._write(self._turn_off_cmd)
         self._is_on = False
 
     async def _write_native_brightness(self, percent: int):
-        """Нативная команда яркости (0..100%)."""
         p = max(0, min(int(percent), 100))
-        # Пакет по наблюдениям: 7E 04 01 <percent> FF 00 FF 00 EF
         await self._write([0x7E, 0x04, 0x01, p, 0xFF, 0x00, 0xFF, 0x00, 0xEF])
 
     @retry_bluetooth_connection_error
     async def set_brightness(self, value: int):
-        """Установка яркости с учётом режима: rgb / native / auto + умный fallback."""
         self._brightness = max(1, min(int(value), 255))
         r, g, b = self._rgb_color
-
-        mode = (self._brightness_mode or DEFAULT_BRIGHTNESS_MODE).lower()
         percent = round(self._brightness * 100 / 255)
+        mode = (self._brightness_mode or DEFAULT_BRIGHTNESS_MODE).lower()
 
         async def write_rgb_scaled():
             scale = self._brightness / 255.0
@@ -254,7 +292,6 @@ class BLEDOMInstance:
             await self._write([0x7E, 0x00, 0x05, 0x03, rr, gg, bb, 0x00, 0xEF])
 
         async def write_native_then_rgb():
-            # Отправляем нативную яркость, затем дублируем текущий RGB
             await self._write_native_brightness(percent)
             await asyncio.sleep(0.05)
             await self._write([0x7E, 0x00, 0x05, 0x03, r, g, b, 0x00, 0xEF])
@@ -264,7 +301,7 @@ class BLEDOMInstance:
                 await write_rgb_scaled()
             elif mode == "native":
                 await write_native_then_rgb()
-            else:  # auto
+            else:
                 try:
                     await write_native_then_rgb()
                     LOGGER.debug("%s: brightness auto→native success (%s%%)", self.name, percent)
@@ -272,7 +309,7 @@ class BLEDOMInstance:
                     LOGGER.warning("%s: native failed (%s), fallback to RGB: %s", self.name, percent, e)
                     await write_rgb_scaled()
         finally:
-            self._save_state()
+            await self._async_save_state()
 
     @retry_bluetooth_connection_error
     async def set_color(self, rgb: Tuple[int, int, int], brightness: int | None = None):
@@ -281,40 +318,22 @@ class BLEDOMInstance:
         r, g, b = (max(0, min(255, c)) for c in rgb)
         self._rgb_color = (int(r), int(g), int(b))
 
-        # При смене цвета — сохраняем текущую яркость через выбранный режим
-        mode = (self._brightness_mode or DEFAULT_BRIGHTNESS_MODE).lower()
-        if mode == "native":
-            await self._write([0x7E, 0x00, 0x05, 0x03, r, g, b, 0x00, 0xEF])
-            await asyncio.sleep(0.02)
-            percent = round(self._brightness * 100 / 255)
-            await self._write_native_brightness(percent)
-        elif mode == "auto":
-            try:
-                await self._write([0x7E, 0x00, 0x05, 0x03, r, g, b, 0x00, 0xEF])
-                await asyncio.sleep(0.02)
-                percent = round(self._brightness * 100 / 255)
-                await self._write_native_brightness(percent)
-            except Exception:
-                scale = self._brightness / 255.0
-                rr, gg, bb = int(r * scale), int(g * scale), int(b * scale)
-                await self._write([0x7E, 0x00, 0x05, 0x03, rr, gg, bb, 0x00, 0xEF])
-        else:
-            scale = self._brightness / 255.0
-            rr, gg, bb = int(r * scale), int(g * scale), int(b * scale)
-            await self._write([0x7E, 0x00, 0x05, 0x03, rr, gg, bb, 0x00, 0xEF])
+        scale = self._brightness / 255.0
+        rr, gg, bb = int(r * scale), int(g * scale), int(b * scale)
+        await self._write([0x7E, 0x00, 0x05, 0x03, rr, gg, bb, 0x00, 0xEF])
 
         self._is_on = True
-        self._save_state()
+        await self._async_save_state()
 
     @retry_bluetooth_connection_error
     async def set_color_temp_kelvin(self, value: int, brightness: int | None = None):
-        """Эмуляция CCT на RGB: интерполяция между 'warm' и 'cool' + масштаб по яркости."""
         k_min, k_max = self._min_color_temp_kelvin, self._max_color_temp_kelvin
         k = max(k_min, min(int(value), k_max))
         self._color_temp_kelvin = k
 
-        warm = (255, 77, 12)       # тёплый
-        cool = (255, 255, 255)     # холодный
+        # Более реалистичные оттенки для тёплого и холодного света
+        warm = (255, 138, 18)
+        cool = (180, 220, 255)
         t = (k - k_min) / (k_max - k_min) if k_max > k_min else 1.0
 
         r = int(warm[0] + (cool[0] - warm[0]) * t)
@@ -324,12 +343,10 @@ class BLEDOMInstance:
         if brightness is not None:
             self._brightness = max(1, min(int(brightness), 255))
 
-        # температура → это тоже RGB-представление, используем общую логику
         await self.set_color((r, g, b), self._brightness)
 
     @retry_bluetooth_connection_error
     async def set_effect(self, value: int):
-        """Включение эффекта (в JSON не сохраняем). value=0x00 → возврат к статическому цвету."""
         try:
             await self._ensure_connected()
             if value in (0x00, None):
@@ -343,12 +360,11 @@ class BLEDOMInstance:
 
     @retry_bluetooth_connection_error
     async def set_effect_speed(self, speed: int):
-        """Установка скорости эффекта (1..31)."""
         s = max(1, min(int(speed), 31))
         self._effect_speed = s
         await self._write([0x7E, 0x00, 0x02, s, 0x03, 0x00, 0x00, 0x00, 0xEF])
 
     async def stop(self):
-        self._save_state()
+        await self._async_save_state()
         if self._client and self._client.is_connected:
             await self._client.disconnect()
