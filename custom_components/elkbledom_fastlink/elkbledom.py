@@ -30,14 +30,32 @@ LOGGER = logging.getLogger(__name__)
 # ---------------------------------------------------------
 # BLE-названия и настройки
 # ---------------------------------------------------------
-NAME_ARRAY = ["ELK-BLEDDM", "ELK-BLE", "LEDBLE", "MELK", "ELK-BULB2", "ELK-BULB", "ELK-LAMPL"]
-WRITE_CHARACTERISTIC_UUIDS = ["0000fff3-0000-1000-8000-00805f9b34fb"] * 7
-TURN_ON_CMD = [[0x7E, 0x00, 0x04, 0xF0, 0x00, 0x01, 0xFF, 0x00, 0xEF]] * 7
-TURN_OFF_CMD = [[0x7E, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xEF]] * 7
+NAME_ARRAY = ["ELK-BLEDDM", "ELK-BLE", "LEDBLE", "MELK", "ELK-BULB2", "ELK-BULB", "ELK-LAMPL", "MELK-OG10W"]
+WRITE_CHARACTERISTIC_UUIDS = ["0000fff3-0000-1000-8000-00805f9b34fb"] * 8
+TURN_ON_CMD = [
+    [0x7E, 0x00, 0x04, 0xF0, 0x00, 0x01, 0xFF, 0x00, 0xEF],  # ELK-BLEDDM
+    [0x7E, 0x00, 0x04, 0xF0, 0x00, 0x01, 0xFF, 0x00, 0xEF],  # ELK-BLE
+    [0x7E, 0x00, 0x04, 0xF0, 0x00, 0x01, 0xFF, 0x00, 0xEF],  # LEDBLE
+    [0x7E, 0x00, 0x04, 0xF0, 0x00, 0x01, 0xFF, 0x00, 0xEF],  # MELK
+    [0x7E, 0x00, 0x04, 0xF0, 0x00, 0x01, 0xFF, 0x00, 0xEF],  # ELK-BULB2
+    [0x7E, 0x00, 0x04, 0xF0, 0x00, 0x01, 0xFF, 0x00, 0xEF],  # ELK-BULB
+    [0x7E, 0x00, 0x04, 0xF0, 0x00, 0x01, 0xFF, 0x00, 0xEF],  # ELK-LAMPL
+    [0x7E, 0x07, 0x04, 0xFF, 0x00, 0x01, 0x02, 0x01, 0xEF],  # MELK-OG10W
+]
+TURN_OFF_CMD = [
+    [0x7E, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xEF],  # ELK-BLEDDM
+    [0x7E, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xEF],  # ELK-BLE
+    [0x7E, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xEF],  # LEDBLE
+    [0x7E, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xEF],  # MELK
+    [0x7E, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xEF],  # ELK-BULB2
+    [0x7E, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xEF],  # ELK-BULB
+    [0x7E, 0x00, 0x04, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xEF],  # ELK-LAMPL
+    [0x7E, 0x07, 0x04, 0x00, 0x00, 0x00, 0x02, 0x01, 0xEF],  # MELK-OG10W
+]
 
 # Реалистичные диапазоны кельвинов для RGB-эмуляции
-MIN_COLOR_TEMPS_K = [1800] * 7
-MAX_COLOR_TEMPS_K = [7000] * 7
+MIN_COLOR_TEMPS_K = [1800] * 7 + [1800]
+MAX_COLOR_TEMPS_K = [7000] * 7 + [7000]
 
 DEFAULT_ATTEMPTS = 3
 BLEAK_BACKOFF_TIME = 0.25
@@ -98,6 +116,7 @@ class BLEDOMInstance:
         self._max_color_temp_kelvin = 7000
 
         self._brightness_mode: str = DEFAULT_BRIGHTNESS_MODE
+        self._is_melk_og10w = False  # Флаг для специальной модели
 
         self._detect_model()
         asyncio.create_task(self._async_init_state())
@@ -216,6 +235,10 @@ class BLEDOMInstance:
                 self._turn_off_cmd = TURN_OFF_CMD[i]
                 self._min_color_temp_kelvin = MIN_COLOR_TEMPS_K[i]
                 self._max_color_temp_kelvin = MAX_COLOR_TEMPS_K[i]
+                # Проверяем, является ли это моделью MELK-OG10W
+                if name == "MELK-OG10W":
+                    self._is_melk_og10w = True
+                    LOGGER.info("%s: detected as MELK-OG10W model", self.name)
                 return
         self._turn_on_cmd = TURN_ON_CMD[0]
         self._turn_off_cmd = TURN_OFF_CMD[0]
@@ -279,6 +302,12 @@ class BLEDOMInstance:
         p = max(0, min(int(percent), 100))
         await self._write([0x7E, 0x04, 0x01, p, 0xFF, 0x00, 0xFF, 0x00, 0xEF])
 
+    async def _write_melk_og10w_cold_white(self, intensity: int):
+        """Спеціальна команда для холодного білого світла MELK-OG10W"""
+        i = max(0, min(int(intensity), 255))
+        percent = int(i * 100 / 255)
+        await self._write([0x7E, 0x07, 0x05, 0x01, percent, 0xFF, 0x02, 0x01, 0xEF])
+
     @retry_bluetooth_connection_error
     async def set_brightness(self, value: int):
         self._brightness = max(1, min(int(value), 255))
@@ -331,7 +360,17 @@ class BLEDOMInstance:
         k = max(k_min, min(int(value), k_max))
         self._color_temp_kelvin = k
 
-        # Более реалистичные оттенки для тёплого и холодного света
+        if brightness is not None:
+            self._brightness = max(1, min(int(brightness), 255))
+
+        # Для MELK-OG10W використовуємо спеціальну команду для холодного білого
+        if self._is_melk_og10w and k > 5000:  # Холодний білий
+            await self._write_melk_og10w_cold_white(self._brightness)
+            self._is_on = True
+            await self._async_save_state()
+            return
+
+        # Для інших моделей або теплого світла - стандартна RGB-емуляція
         warm = (255, 138, 18)
         cool = (180, 220, 255)
         t = (k - k_min) / (k_max - k_min) if k_max > k_min else 1.0
@@ -339,9 +378,6 @@ class BLEDOMInstance:
         r = int(warm[0] + (cool[0] - warm[0]) * t)
         g = int(warm[1] + (cool[1] - warm[1]) * t)
         b = int(warm[2] + (cool[2] - warm[2]) * t)
-
-        if brightness is not None:
-            self._brightness = max(1, min(int(brightness), 255))
 
         await self.set_color((r, g, b), self._brightness)
 
